@@ -5,13 +5,13 @@
   <meta name="viewport" content="width=device-width, initial-scale=1">
   <meta name="referrer" content="strict-origin-when-cross-origin">
   <title>WvH Schulchor | Gemeinsam singen</title>
-  <link rel="stylesheet" href="style.css">
+  <link rel="stylesheet" href="style.css?v=20261119b">
   <script defer src="https://cdn.jsdelivr.net/npm/@supabase/supabase-js@2.119.0"></script>
   <script defer src="app.js"></script>
-  <script defer src="demo.js"></script>
+  <script defer src="demo.js?v=20261119b"></script>
 </head>
 <body>
-  <header class="site-header"><div class="header-inner"><div><span class="eyebrow">WILHELM-VON-HUMBOLDT-SCHULE</span><h1>Unser Schulchor</h1><p>Gemeinsam singen. Auch wenn wir nicht im selben Raum sind.</p></div><div class="notes"><span aria-hidden="true">♫ </span><button type="button" id="demoNote" class="demo-note" aria-label="Schulchor-Modus wählen: Demo oder Anmeldung" title="Demo oder Anmeldung wählen">♪</button><span aria-hidden="true"> ♬</span></div></div></header>
+  <header class="site-header"><div class="header-inner"><div><span class="eyebrow">WILHELM-VON-HUMBOLDT-SCHULE</span><h1>Unser Schulchor</h1><p>Gemeinsam singen. Auch wenn wir nicht im selben Raum sind.</p></div><div class="notes"><span aria-hidden="true">♫ </span><button type="button" id="demoNote" class="demo-note" aria-label="Demo oder Anmeldung auswählen" title="Demo oder Anmeldung auswählen" onclick="if(window.openWvhDemo){window.openWvhDemo()}else{import('./demo.js?v=20261119b').then(()=>window.openWvhDemo&&window.openWvhDemo()).catch(()=>alert('Die Demo konnte nicht geladen werden. Bitte Seite neu laden.'))}">♪</button><span aria-hidden="true"> ♬</span></div></div></header>
   <div id="message" aria-live="polite" role="status" class="toast" hidden></div>
   <main id="app" class="main-wrap"><section class="panel centered"><h2>Schulchor wird vorbereitet …</h2><p>Die Verbindung wird geladen.</p></section></main>
   <footer>WvH Schulchor · Geschützter Testbetrieb · Keine echten Schüleraufnahmen vor Freigabe durch die Schule</footer>
