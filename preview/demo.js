@@ -40,7 +40,7 @@
   function render(){
     const teacher=demo.role==='teacher';
     const nav=teacher?[['songs','Lieder'],['people','Schülerkonten'],['submissions','Eingänge'],['studio','Tonstudio']]:[['songs','Meine Lieder'],['record','Einsingen'],['mine','Meine Abgaben']];
-    layer.innerHTML='<div class="demo-dialog"><div class="demo-top"><div><span class="demo-eyebrow">WvH SCHULCHOR · UNVERBINDLICHE VORSCHAU</span><h2 id="demoTitle">Demo-Modus</h2></div><button type="button" class="demo-close" data-demo="close" aria-label="Demo schließen">×</button></div><div class="demo-banner"><strong>Nur zum Ausprobieren:</strong> Alle Konten, Lieder und Aufnahmen hier sind Beispiele. Es gibt keinen Zugriff auf echte Daten, keine echte Anmeldung und keinen Upload.</div><div class="demo-role"><span>Ansicht:</span><button type="button" class="'+(!teacher?'selected':'')+'" data-demo="student">Schüler</button><button type="button" class="'+(teacher?'selected':'')+'" data-demo="teacher">Lehrkraft</button></div><div class="demo-layout"><nav class="demo-nav" aria-label="Demo-Navigation">'+nav.map(([key,label])=>'<button type="button" data-demo="page" data-page="'+key+'" class="'+(demo.page===key?'selected':'')+'">'+label+'</button>').join('')+'</nav><div class="demo-main">'+(teacher?teacherContent():studentContent())+'</div></div><div class="demo-bottom">Die echte Schulchor-Anmeldung bleibt unverändert. '+button('close','Zurück zur echten Webseite','demo-secondary')+'</div></div>';
+    layer.innerHTML='<div class="demo-dashboard"><div class="demo-dashboard-header"><div><span class="demo-eyebrow">WILHELM-VON-HUMBOLDT-SCHULE</span><h2 id="demoTitle">Unser Schulchor</h2><p>Gemeinsam singen. Auch wenn wir nicht im selben Raum sind.</p></div><span class="demo-notes" aria-hidden="true">♫ ♪ ♬</span></div><div class="demo-disclosure"><strong>TESTANSICHT</strong> · '+(teacher?'Lehrkraft':'Schüler/in')+' · Nur Beispieldaten, keine echte Anmeldung und keine gespeicherten Änderungen</div><div class="demo-dashboard-layout"><aside class="demo-sidebar"><div class="demo-identity"><strong>'+(teacher?'Beispiel-Lehrkraft':'Beispiel-Schüler/in')+'</strong><small>Testkonto · kein echter Benutzer</small></div><nav class="demo-nav" aria-label="Demo-Navigation">'+nav.map(([key,label])=>'<button type="button" data-demo="page" data-page="'+key+'" class="'+(demo.page===key?'selected':'')+'">'+label+'</button>').join('')+'</nav><div class="demo-sidebar-footer"><button type="button" class="demo-btn demo-secondary" data-demo="switch-role">Ansicht wechseln</button><button type="button" class="demo-btn demo-secondary" data-demo="close">Demo verlassen</button></div></aside><main class="demo-main">'+(teacher?teacherContent():studentContent())+'</main></div></div>';
   }
   function open(){
     renderChoice();layer.hidden=false;document.body.classList.add('demo-open');
@@ -55,6 +55,7 @@
     if(!target)return;
     const action=target.dataset.demo;
     if(action==='close'){close();return;}
+    if(action==='switch-role'){renderChoice();return;}
     if(action==='choose-login'){
       close();
       const email=document.getElementById('loginEmail');
