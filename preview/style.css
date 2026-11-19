@@ -51,3 +51,30 @@
 .demo-choice-note{margin:12px 25px 25px;color:#61736a;font-size:12px}
 .demo-note{min-width:44px;min-height:52px;display:inline-flex;align-items:center;justify-content:center}
 @media(max-width:650px){.demo-choice-grid{grid-template-columns:1fr;padding:14px;gap:9px}.demo-choice{min-height:0;padding:14px 16px;gap:4px}.demo-choice>span{font-size:26px}.demo-choice-note{margin:8px 16px 18px}}
+
+/* Vollbild-Demo statt Dialogfenster; die Musiknote bleibt optisch unauffällig. */
+.demo-note,.demo-note:hover,.demo-note:active{color:var(--gold)!important;background:transparent!important;transform:none!important;box-shadow:none!important;text-decoration:none!important}
+.demo-note{padding:0 3px;border:0;min-width:auto;min-height:auto;cursor:default;transition:none}
+.demo-note:focus-visible{outline:2px solid white;outline-offset:3px}
+.demo-layer{padding:0;background:var(--cream)}
+.demo-dashboard{min-height:100vh;background:var(--cream)}
+.demo-dashboard-header{background:var(--green);color:#fff;display:flex;justify-content:space-between;align-items:center;padding:24px max(22px,calc((100vw - 1200px)/2));gap:15px}
+.demo-dashboard-header h2{font:normal clamp(29px,4vw,41px) Georgia,serif;margin:4px 0}
+.demo-dashboard-header p{color:#e8e1d1;margin:0}
+.demo-notes{font-size:45px;color:var(--gold);white-space:nowrap}
+.demo-disclosure{background:#fff3cd;color:#665020;padding:10px max(22px,calc((100vw - 1200px)/2));font-size:12px;border-bottom:1px solid #ecdfa6}
+.demo-disclosure strong{letter-spacing:1px}
+.demo-dashboard-layout{display:grid;grid-template-columns:230px minmax(0,1fr);gap:25px;max-width:1240px;padding:25px 20px;margin:auto}
+.demo-sidebar{background:#e8eee7;border:1px solid var(--line);border-radius:14px;padding:16px;align-self:start}
+.demo-identity{border-bottom:1px solid var(--line);padding:13px;margin-bottom:10px}
+.demo-identity strong,.demo-identity small{display:block}
+.demo-identity small{font-size:12px;color:var(--muted)}
+.demo-sidebar .demo-nav{display:flex;flex-direction:column;gap:3px}
+.demo-sidebar .demo-nav button{display:block;width:100%;text-align:left;background:transparent;border:0;color:var(--ink);padding:12px 13px;border-radius:9px}
+.demo-sidebar .demo-nav button.selected{background:var(--green);color:#fff}
+.demo-sidebar-footer{display:flex;flex-direction:column;gap:8px;border-top:1px solid var(--line);margin-top:18px;padding-top:12px}
+.demo-sidebar-footer .demo-btn{text-align:left;font-size:12px;font-weight:500;padding:9px}
+.demo-dashboard .demo-main{min-width:0;padding:6px 0}
+.demo-dashboard .demo-main h3{font-size:clamp(25px,3vw,31px)}
+.demo-dashboard .demo-card{max-width:900px}
+@media(max-width:780px){.demo-dashboard-layout{grid-template-columns:1fr;padding:14px;gap:13px}.demo-sidebar{padding:9px}.demo-sidebar .demo-nav{flex-direction:row;overflow:auto}.demo-sidebar .demo-nav button{width:auto;white-space:nowrap}.demo-sidebar-footer{flex-direction:row;flex-wrap:wrap;align-items:center;margin-top:8px}.demo-identity{padding:7px;margin-bottom:4px}.demo-dashboard-header{padding:20px 15px}.demo-disclosure{padding:9px 15px}.demo-notes{font-size:27px}}
