@@ -78,3 +78,7 @@
 .demo-dashboard .demo-main h3{font-size:clamp(25px,3vw,31px)}
 .demo-dashboard .demo-card{max-width:900px}
 @media(max-width:780px){.demo-dashboard-layout{grid-template-columns:1fr;padding:14px;gap:13px}.demo-sidebar{padding:9px}.demo-sidebar .demo-nav{flex-direction:row;overflow:auto}.demo-sidebar .demo-nav button{width:auto;white-space:nowrap}.demo-sidebar-footer{flex-direction:row;flex-wrap:wrap;align-items:center;margin-top:8px}.demo-identity{padding:7px;margin-bottom:4px}.demo-dashboard-header{padding:20px 15px}.demo-disclosure{padding:9px 15px}.demo-notes{font-size:27px}}
+
+/* Musiknote ohne sichtbare Maus-Interaktionssignale */
+.notes .demo-note,.notes .demo-note:hover,.notes .demo-note:active,.notes .demo-note:focus:not(:focus-visible){color:var(--gold)!important;background:none!important;border:0!important;outline:none!important;box-shadow:none!important;transform:none!important;text-decoration:none!important;filter:none!important;cursor:default!important;-webkit-tap-highlight-color:transparent;appearance:none}
+.notes .demo-note:focus-visible{outline:2px solid #fff;outline-offset:2px}
