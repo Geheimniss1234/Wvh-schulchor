@@ -35,7 +35,7 @@
     return '';
   }
   function renderChoice(){
-    layer.innerHTML='<div class="demo-dialog demo-chooser"><div class="demo-top"><div><span class="demo-eyebrow">WvH SCHULCHOR · AUSWAHL</span><h2 id="demoTitle">Wie möchtest du die Webseite ansehen?</h2></div><button type="button" class="demo-close" data-demo="close" aria-label="Auswahl schließen">×</button></div><div class="demo-choice-grid"><button class="demo-choice" type="button" data-demo="choose-student"><span aria-hidden="true">♫</span><strong>Schüler-Demo</strong><small>Aufnehmen und Abgeben mit Beispieldaten ausprobieren</small></button><button class="demo-choice" type="button" data-demo="choose-teacher"><span aria-hidden="true">♬</span><strong>Lehrer-Demo</strong><small>Lieder, Schülerverwaltung und Tonstudio mit Beispieldaten ansehen</small></button><button class="demo-choice demo-choice-real" type="button" data-demo="choose-login"><span aria-hidden="true">♩</span><strong>Echte Anmeldung</strong><small>Mit deinem eigenen Schüler- oder Lehrerkonto anmelden</small></button></div><p class="demo-choice-note">Die beiden Demos sind öffentlich und enthalten keine echten Schülerdaten. Zugriff auf das echte Lehrerkonto gibt es ausschließlich mit dem zugehörigen Passwort.</p></div>';
+    layer.innerHTML='<div class="demo-dialog demo-chooser"><div class="demo-top"><div><span class="demo-eyebrow">WvH SCHULCHOR · AUSWAHL</span><h2 id="demoTitle">Wie möchtest du die Webseite ansehen?</h2></div><button type="button" class="demo-close" data-demo="close" aria-label="Auswahl schließen">×</button></div><div class="demo-choice-grid"><button class="demo-choice" type="button" data-demo="choose-student"><span aria-hidden="true">♫</span><strong>Schüler-Demo</strong><small>Aufnehmen und Abgeben mit Beispieldaten ausprobieren</small></button><button class="demo-choice demo-choice-real" type="button" data-demo="choose-teacher-login"><span aria-hidden="true">♬</span><strong>Echtes Lehrerkonto</strong><small>Mit dem autorisierten Lehrerkonto anmelden und echte Funktionen testen</small></button><button class="demo-choice demo-choice-real" type="button" data-demo="choose-login"><span aria-hidden="true">♩</span><strong>Echte Anmeldung</strong><small>Mit deinem eigenen Schüler- oder Lehrerkonto anmelden</small></button></div><p class="demo-choice-note">Die Schüler-Demo ist öffentlich und enthält nur Beispieldaten. Das echte Lehrerkonto ist geschützt und erfordert die persönliche Freigabe durch Frau Nolte.</p></div>';
   }
   function render(){
     const teacher=demo.role==='teacher';
@@ -56,8 +56,12 @@
     const action=target.dataset.demo;
     if(action==='close'){close();return;}
     if(action==='switch-role'){renderChoice();return;}
-    if(action==='choose-login'){
+    if(action==='choose-login'||action==='choose-teacher-login'){
       close();
+      if(action==='choose-teacher-login' && !document.getElementById('loginEmail')){
+        alert('Du bist bereits angemeldet. Für ein anderes echtes Konto musst du dich erst regulär abmelden. Das Lehrerkonto benötigt eigene, von Frau Nolte freigegebene Zugangsdaten.');
+        return;
+      }
       const email=document.getElementById('loginEmail');
       if(email){email.scrollIntoView({behavior:'smooth',block:'center'});email.focus();}
       else document.querySelector('.identity')?.scrollIntoView({behavior:'smooth',block:'center'});
