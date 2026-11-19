@@ -37,3 +37,17 @@
 .demo-track{display:flex;gap:15px;background:#e6eee6;padding:12px;border-radius:8px;letter-spacing:2px}
 .demo-bottom{border-top:1px solid #dbe3db;padding:16px 25px;display:flex;align-items:center;justify-content:space-between;gap:12px;font-size:12px;color:#61736a}
 @media(max-width:650px){.demo-layer{padding:6px}.demo-dialog{margin:0}.demo-layout{grid-template-columns:1fr;padding:16px}.demo-nav{flex-direction:row;overflow:auto}.demo-nav button{white-space:nowrap}.demo-top{padding:16px}.demo-banner{padding:12px 16px}.demo-role{padding:12px 16px}.demo-bottom{padding:14px 16px;flex-wrap:wrap}}
+
+/* Auswahl für öffentliche Demo oder echtes Konto */
+.demo-chooser{max-width:800px}
+.demo-chooser .demo-top h2{font-size:clamp(22px,3vw,31px)}
+.demo-choice-grid{display:grid;grid-template-columns:repeat(3,minmax(0,1fr));gap:14px;padding:25px 25px 8px}
+.demo-choice{display:flex;flex-direction:column;align-items:flex-start;text-align:left;gap:9px;border:1px solid #d8e2d9;border-radius:14px;background:#fff;padding:21px 17px;color:#243d34;min-height:190px}
+.demo-choice>span{color:#af8b43;font-size:36px;line-height:1}
+.demo-choice strong{font-size:17px}
+.demo-choice small{font-size:12px;line-height:1.5;color:#61736a}
+.demo-choice:hover,.demo-choice:focus-visible{border-color:#1c5542;box-shadow:0 0 0 3px #dce8de;outline:none}
+.demo-choice-real{background:#eef4ef;border-color:#9eb8a7}
+.demo-choice-note{margin:12px 25px 25px;color:#61736a;font-size:12px}
+.demo-note{min-width:44px;min-height:52px;display:inline-flex;align-items:center;justify-content:center}
+@media(max-width:650px){.demo-choice-grid{grid-template-columns:1fr;padding:14px;gap:9px}.demo-choice{min-height:0;padding:14px 16px;gap:4px}.demo-choice>span{font-size:26px}.demo-choice-note{margin:8px 16px 18px}}
