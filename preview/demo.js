@@ -49,7 +49,7 @@
   function close(){
     layer.hidden=true;document.body.classList.remove('demo-open');trigger.focus();
   }
-  trigger.addEventListener('click',open);
+  window.openWvhDemo = open;
   layer.addEventListener('click',ev=>{
     const target=ev.target.closest('button[data-demo]');
     if(!target)return;
