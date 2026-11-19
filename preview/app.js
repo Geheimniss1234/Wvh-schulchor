@@ -41,7 +41,7 @@ function manageSongView(){const song=findSong();if(!song)return `<p>Lied nicht g
   const assigned=new Set(state.assignments.filter(a=>a.song_id===song.id).map(a=>a.student_id));
   const opts=state.people.filter(p=>p.role==='student');
   return `<div class="row"><button class="button-secondary" data-page="songs">← Lieder</button></div><h2>${esc(song.title)}</h2><p class="muted">${esc(song.description||'')}</p><section class="panel"><h3>Veröffentlichung</h3><div class="row"><select id="songStatusEdit" class="song-select"><option value="draft" ${song.status==='draft'?'selected':''}>Entwurf</option><option value="active" ${song.status==='active'?'selected':''}>Zum Einsingen freigeben</option><option value="finished" ${song.status==='finished'?'selected':''}>Abgeschlossen</option></select><button class="button-secondary" data-action="save-song-status">Speichern</button></div></section>
-  <section class="panel"><h3>Begleitmusik oder Video hochladen</h3><p class="muted">MP3, WAV, M4A, OGG, WEBM oder MP4. Schüler können die Begleitung beim Einsingen hören oder ein Video mitlesen. Maximal 48 MB pro Datei.</p><div class="dropzone" id="uploadZone"><b>Datei hierherziehen</b><p>oder</p><input id="mediaFile" type="file" accept="audio/*,video/mp4,video/webm"><p id="mediaSelection" class="tiny muted">Noch keine Datei ausgewählt</p><button class="button" data-action="upload-media" type="button">Begleitung hochladen</button></div><div id="mediaArea">${song.accompaniment_path?'<p class="tiny">Gespeicherte Begleitung wird geladen …</p>':'<p class="muted">Noch keine Datei hochgeladen.</p>'}</div></section>
+  <section class="panel"><h3>Begleitmusik oder Video hochladen</h3><p class="muted">MP3, WAV, M4A, OGG, WEBM oder MP4. Schüler können die Begleitung beim Einsingen hören oder ein Video mitlesen. Dateien bis 48 MB. Größere Videos werden in unterstützten Browsern automatisch verkleinert; dies kann so lange wie das Video dauern.</p><div class="dropzone" id="uploadZone"><b>Datei hierherziehen</b><p>oder</p><input id="mediaFile" type="file" accept="audio/*,video/mp4,video/webm"><p id="mediaSelection" class="tiny muted">Noch keine Datei ausgewählt</p><button class="button" data-action="upload-media" type="button">Begleitung hochladen</button></div><div id="mediaArea">${song.accompaniment_path?'<p class="tiny">Gespeicherte Begleitung wird geladen …</p>':'<p class="muted">Noch keine Datei hochgeladen.</p>'}</div></section>
   <section class="panel"><h3>Schüler zuweisen</h3><p class="muted">Nur zugewiesene Schüler sehen dieses Lied.</p><div class="checkbox-list">${opts.length?opts.map(p=>`<div class="checkbox-row"><input type="checkbox" class="assignBox" id="assign_${esc(p.id)}" value="${esc(p.id)}" ${assigned.has(p.id)?'checked':''}><label for="assign_${esc(p.id)}">${esc(p.display_name||p.username||'Schüler')}</label></div>`).join(''):'Noch keine Schülerkonten. Lege sie unter „Schülerkonten“ an.'}</div><p><button class="button-secondary" data-action="save-assignments">Zuweisungen speichern</button></p></section>`;}
 function peopleView(){const students=state.people.filter(p=>p.role==='student');return `<h2>Schülerkonten</h2><p class="muted">Frau Nolte verwaltet die Zugänge. Das Passwort wird sicher erzeugt und nur unmittelbar nach Erstellung oder Zurücksetzung angezeigt.</p><div class="two-col"><section class="panel"><h3>Schüler hinzufügen</h3><form id="createStudentForm" class="stack"><div><label for="newStudentName">Anzeigename</label><input id="newStudentName" name="name" required maxlength="70" placeholder="Vorname oder Kürzel"></div><div><label for="newStudentEmail">E-Mail-Adresse des Schülers</label><input id="newStudentEmail" name="email" type="email" required autocomplete="off" placeholder="schule@example.de"></div><button class="button">Zugang erstellen</button></form><p class="tiny muted">Für diese erste Version erfolgt die Anmeldung mit E-Mail + zugeteiltem Passwort. Für Benutzername-ohne-E-Mail wäre eine zusätzliche gesicherte Zuordnung nötig.</p><div id="studentCreated"></div></section><section class="panel"><h3>Vorhandene Konten (${students.length})</h3>${students.length?students.map(p=>`<div class="list-row"><b>${esc(p.display_name||p.username)}</b><div class="tiny muted">${esc(p.login_email||'')}</div><button class="button-secondary" data-reset-student="${esc(p.id)}">Passwort neu vergeben</button></div>`).join(''):'Noch keine Schülerkonten.'}</section></div>`;}
 function studentSongView(){const song=findSong();if(!song)return `<p>Bitte wähle erst ein Lied.</p>`;const mine=myRecs(song.id).length;return `<div class="row"><button class="button-secondary" data-page="songs">← Meine Lieder</button></div><section class="panel"><h2>${esc(song.title)}</h2>${pill(song)}<p>${esc(song.description||'')}</p><p><b>${mine} eigene Abgabe(n)</b> · ${esc(counts(song))}</p>${song.accompaniment_path?'<p>Frau Nolte hat eine Begleitung bereitgestellt.</p>':'<div class="notice">Für dieses Lied wurde noch keine Begleitung hochgeladen.</div>'}<div class="row">${song.status==='active'?`<button class="button" data-action="go-record">Jetzt einsingen</button>`:''}<button class="button-secondary" data-page="mine">Meine Abgaben</button></div></section>`;}
@@ -93,7 +93,66 @@ function setupMediaDrop(){const zone=$('uploadZone'),input=$('mediaFile');if(!zo
   zone.addEventListener('drop',e=>{const f=e.dataTransfer.files[0];if(f){state.trackFile=f;$('mediaSelection').textContent=f.name+' ('+(f.size/1048576).toFixed(1)+' MB)';}});
   input.addEventListener('change',()=>{state.trackFile=input.files[0]||null;$('mediaSelection').textContent=state.trackFile?state.trackFile.name:'Keine Datei ausgewählt';});
 }
-async function uploadMedia(){const file=state.trackFile, song=findSong();if(!song||!file)throw Error('Bitte zuerst eine Audio- oder Videodatei auswählen.');let mime=file.type.split(';')[0];if(!allowedMimes.has(mime))throw Error('Nicht unterstützter Dateityp: '+(mime||'unbekannt'));if(file.size>maxUpload)throw Error('Die Datei ist größer als 48 MB.');let ext=(file.name.split('.').pop()||'').toLowerCase();if(!/^(mp3|wav|m4a|mp4|ogg|webm)$/.test(ext))throw Error('Dateiendung nicht unterstützt.');let path=`${song.id}/${crypto.randomUUID()}.${ext}`;notify('Begleitung wird hochgeladen …');throwIfError(await sb.storage.from('accompaniments').upload(path,file,{contentType:mime,upsert:false}));let result=await sb.from('songs').update({accompaniment_path:path,accompaniment_mime:mime}).eq('id',song.id);if(result.error)throw result.error;state.trackFile=null;await refresh();notify('Begleitung für zugewiesene Schüler bereitgestellt.');}
+
+async function compressLargeVideo(original){
+  const outMime=['video/webm;codecs=vp8,opus','video/webm;codecs=vp9,opus','video/webm'].find(t=>window.MediaRecorder?.isTypeSupported(t));
+  if(!outMime||!HTMLCanvasElement.prototype.captureStream||!(window.AudioContext||window.webkitAudioContext))
+    throw Error('Automatische Videokomprimierung wird hier nicht unterstützt. Bitte Chrome oder Edge am Computer verwenden.');
+  const video=document.createElement('video'), url=URL.createObjectURL(original);
+  video.src=url;video.preload='auto';video.playsInline=true;
+  video.style.cssText='position:fixed;left:-10000px;top:0;width:2px;height:2px;pointer-events:none';
+  document.body.appendChild(video);
+  let audio=null,stream=null,recorder=null,interval=null,frame=null;
+  try{
+    await new Promise((ok,fail)=>{
+      if(video.readyState>=1)return ok();
+      video.addEventListener('loadedmetadata',ok,{once:true});
+      video.addEventListener('error',()=>fail(Error('Videodatei konnte nicht gelesen werden.')),{once:true});
+      video.load();
+    });
+    const duration=video.duration;
+    if(!Number.isFinite(duration)||duration<=0||duration>1200)throw Error('Das Video muss zwischen 1 Sekunde und 20 Minuten lang sein.');
+    const canvas=document.createElement('canvas');
+    const scale=Math.min(1,960/Math.max(1,video.videoWidth),540/Math.max(1,video.videoHeight));
+    canvas.width=Math.max(2,Math.round(video.videoWidth*scale/2)*2);
+    canvas.height=Math.max(2,Math.round(video.videoHeight*scale/2)*2);
+    const ctx=canvas.getContext('2d',{alpha:false});
+    if(!ctx)throw Error('Videokomprimierung nicht verfügbar.');
+    const draw=()=>{if(video.readyState>=2)ctx.drawImage(video,0,0,canvas.width,canvas.height);frame=requestAnimationFrame(draw);};
+    draw();
+    stream=canvas.captureStream(20);
+    audio=new (window.AudioContext||window.webkitAudioContext)();
+    const source=audio.createMediaElementSource(video),dest=audio.createMediaStreamDestination();
+    source.connect(dest);
+    dest.stream.getAudioTracks().forEach(t=>stream.addTrack(t));
+    await audio.resume();
+    const videoRate=Math.max(160000,Math.min(1100000,Math.floor(40*1024*1024*8/duration)-96000));
+    recorder=new MediaRecorder(stream,{mimeType:outMime,videoBitsPerSecond:videoRate,audioBitsPerSecond:96000});
+    const chunks=[];
+    const finished=new Promise((ok,fail)=>{
+      recorder.ondataavailable=e=>{if(e.data?.size)chunks.push(e.data);};
+      recorder.onerror=e=>fail(Error('Komprimierung fehlgeschlagen.'));
+      recorder.onstop=()=>{const b=new Blob(chunks,{type:'video/webm'});b.size?ok(new File([b],original.name.replace(/\.[^.]+$/,'')+'-klein.webm',{type:'video/webm'})):fail(Error('Das Video konnte nicht verarbeitet werden.'));};
+    });
+    video.addEventListener('ended',()=>{if(recorder.state!=='inactive')recorder.stop();},{once:true});
+    recorder.start(1000);
+    try{await video.play();}catch{throw Error('Videowiedergabe blockiert. Bitte Chrome oder Edge am Computer verwenden.');}
+    interval=setInterval(()=>notify('Video wird verkleinert: '+Math.min(99,Math.round(video.currentTime/duration*100))+' %. Bitte Tab offen lassen.'),1000);
+    const result=await finished;
+    if(result.size>maxUpload)throw Error('Das verkleinerte Video ist weiterhin größer als 48 MB.');
+    return result;
+  }finally{
+    if(interval)clearInterval(interval);
+    if(frame)cancelAnimationFrame(frame);
+    video.pause();
+    if(recorder&&recorder.state!=='inactive')try{recorder.stop();}catch{}
+    if(stream)stream.getTracks().forEach(t=>t.stop());
+    if(audio)await audio.close().catch(()=>{});
+    video.removeAttribute('src');video.load();video.remove();URL.revokeObjectURL(url);
+  }
+}
+
+async function uploadMedia(){let file=state.trackFile;const song=findSong();if(!song||!file)throw Error('Bitte zuerst eine Audio- oder Videodatei auswählen.');let mime=file.type.split(';')[0];if(!allowedMimes.has(mime))throw Error('Nicht unterstützter Dateityp: '+(mime||'unbekannt'));if(file.size>maxUpload){if(!mime.startsWith('video/'))throw Error('Audiodateien müssen kleiner als 48 MB sein.');notify('Großes Video wird automatisch verkleinert. Dies dauert etwa so lange wie das Video.');file=await compressLargeVideo(file);mime=file.type;}let ext=(file.name.split('.').pop()||'').toLowerCase();if(!/^(mp3|wav|m4a|mp4|ogg|webm)$/.test(ext))throw Error('Dateiendung nicht unterstützt.');let path=`${song.id}/${crypto.randomUUID()}.${ext}`;notify('Begleitung wird hochgeladen …');throwIfError(await sb.storage.from('accompaniments').upload(path,file,{contentType:mime,upsert:false}));let result=await sb.from('songs').update({accompaniment_path:path,accompaniment_mime:mime}).eq('id',song.id);if(result.error)throw result.error;state.trackFile=null;await refresh();notify('Begleitung für zugewiesene Schüler bereitgestellt.');}
 async function refreshMics(ask=true){const select=$('micSelect');if(!select||!navigator.mediaDevices?.enumerateDevices)return;
   let temp=null;if(ask){temp=await navigator.mediaDevices.getUserMedia({audio:true});}
   try{const devices=(await navigator.mediaDevices.enumerateDevices()).filter(x=>x.kind==='audioinput');select.innerHTML='<option value="">Standardmikrofon</option>'+devices.map((d,i)=>`<option value="${esc(d.deviceId)}" ${d.deviceId===state.deviceId?'selected':''}>${esc(d.label||'Mikrofon '+(i+1))}</option>`).join('');}finally{temp?.getTracks().forEach(t=>t.stop());}}
