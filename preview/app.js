@@ -14,7 +14,7 @@ const allowedMimes = new Set(['audio/webm','audio/mp4','audio/mpeg','audio/wav',
 const maxUpload = 48 * 1024 * 1024;
 let sb = null;
 const state = {user:null,profile:null,page:'songs',songs:[],people:[],assignments:[],recs:[],counts:[],songId:null,
-  pending:null,mediaUrl:null,mediaPath:null,mediaSongId:null,deviceId:'',recorder:null,videoRecorder:null,videoStream:null,videoPreview:false,stream:null,timer:null,started:0,countdownActive:false,
+  pending:null,mediaUrl:null,mediaPath:null,mediaSongId:null,deviceId:'',recorder:null,videoRecorder:null,videoStream:null,videoPreview:false,pcmCapture:null,stream:null,timer:null,started:0,countdownActive:false,
   trackFile:null,studioTracks:[],studioSources:[],audioContext:null,loading:false,initializing:false};
 
 function notify(message,error=false){const el=$('message');el.hidden=false;el.className='toast'+(error?' error':'');el.textContent=message;}
@@ -46,7 +46,7 @@ function manageSongView(){const song=findSong();if(!song)return `<p>Lied nicht g
 function peopleView(){const students=state.people.filter(p=>p.role==='student');return `<h2>Schülerkonten</h2><p class="muted">Frau Nolte verwaltet die Zugänge. Das Passwort wird sicher erzeugt und nur unmittelbar nach Erstellung oder Zurücksetzung angezeigt.</p><div class="two-col"><section class="panel"><h3>Schüler hinzufügen</h3><form id="createStudentForm" class="stack"><div><label for="newStudentName">Anzeigename</label><input id="newStudentName" name="name" required maxlength="70" placeholder="Vorname oder Kürzel"></div><div><label for="newStudentEmail">E-Mail-Adresse des Schülers</label><input id="newStudentEmail" name="email" type="email" required autocomplete="off" placeholder="schule@example.de"></div><button class="button">Zugang erstellen</button></form><p class="tiny muted">Für diese erste Version erfolgt die Anmeldung mit E-Mail + zugeteiltem Passwort. Für Benutzername-ohne-E-Mail wäre eine zusätzliche gesicherte Zuordnung nötig.</p><div id="studentCreated"></div></section><section class="panel"><h3>Vorhandene Konten (${students.length})</h3>${students.length?students.map(p=>`<div class="list-row"><b>${esc(p.display_name||p.username)}</b><div class="tiny muted">${esc(p.login_email||'')}</div><button class="button-secondary" data-reset-student="${esc(p.id)}">Passwort neu vergeben</button></div>`).join(''):'Noch keine Schülerkonten.'}</section></div>`;}
 function studentSongView(){const song=findSong();if(!song)return `<p>Bitte wähle erst ein Lied.</p>`;const mine=myRecs(song.id).length;return `<div class="row"><button class="button-secondary" data-page="songs">← Meine Lieder</button></div><section class="panel"><h2>${esc(song.title)}</h2>${pill(song)}<p>${esc(song.description||'')}</p><p><b>${mine} eigene Abgabe(n)</b> · ${esc(counts(song))}</p>${song.accompaniment_path?'<p>Frau Nolte hat eine Begleitung bereitgestellt.</p>':'<div class="notice">Für dieses Lied wurde noch keine Begleitung hochgeladen.</div>'}<div class="row">${song.status==='active'?`<button class="button" data-action="go-record">Jetzt einsingen</button>`:''}<button class="button-secondary" data-page="mine">Meine Abgaben</button></div></section>`;}
 function recordView(){let songs=state.songs.filter(s=>canRecord(s));let selected=songs.find(s=>s.id===state.songId)||songs[0];if(selected)state.songId=selected.id;
-  return `<h2>Deine Stimme einsingen</h2><p class="muted">Drei Schritte: Begleitung anhören, aufnehmen, kontrollieren und abgeben.</p>${songs.length?`<section class="panel"><label for="recSongSelect">Welches Lied?</label><select id="recSongSelect" class="song-select">${songs.map(s=>`<option value="${esc(s.id)}" ${s.id===state.songId?'selected':''}>${esc(s.title)}</option>`).join('')}</select><div id="recMedia"><p class="muted">Begleitung wird geladen …</p></div><label for="micSelect">Mikrofon</label><div class="row"><select id="micSelect" class="song-select"><option value="">Standardmikrofon</option></select><button class="button-secondary" data-action="refresh-mics">Mikrofone anzeigen</button></div><div class="panel" style="margin:14px 0"><label><input type="checkbox" id="cameraEnabled"> Kamera mitaufnehmen (freiwillig)</label><p class="tiny muted">Wenn aktiviert, wird zusätzlich ein stummes Kameravideo aufgenommen, das du auf deinem PC speichern kannst. Deine Stimme wird separat aufgenommen und wie bisher an Frau Nolte gesendet. Das Video wird nicht hochgeladen.</p><video id="cameraPreview" autoplay muted playsinline style="display:none;width:100%;max-width:380px;border-radius:12px;background:#111" aria-label="Kameravorschau"></video></div><div class="mic-stage" id="micStage"><div id="recLive">Bereit zur Aufnahme</div><div class="timer" id="recTimer">00:00</div><p class="tiny muted">Nach dem Klick startet ein Countdown von 3 Sekunden. Benutze Kopfhörer.</p><button class="button" id="startRecording" data-action="start-record">● Aufnahme starten</button><button class="button-danger hidden" id="stopRecording" data-action="stop-record">■ Aufnahme beenden</button></div><div id="reviewArea"></div></section>`:'<div class="notice">Du hast gerade kein aktives Lied zum Einsingen. Frau Nolte kann dir eines zuweisen.</div>'}`;}
+  return `<h2>Deine Stimme einsingen</h2><p class="muted">Drei Schritte: Begleitung anhören, aufnehmen, kontrollieren und abgeben.</p>${songs.length?`<section class="panel"><label for="recSongSelect">Welches Lied?</label><select id="recSongSelect" class="song-select">${songs.map(s=>`<option value="${esc(s.id)}" ${s.id===state.songId?'selected':''}>${esc(s.title)}</option>`).join('')}</select><div id="recMedia"><p class="muted">Begleitung wird geladen …</p></div><label for="micSelect">Mikrofon</label><div class="row"><select id="micSelect" class="song-select"><option value="">Standardmikrofon</option></select><button class="button-secondary" data-action="refresh-mics">Mikrofone anzeigen</button></div><div class="panel" style="margin:14px 0"><label><input type="checkbox" id="cameraEnabled"> Kamera mitaufnehmen (freiwillig)</label><p class="tiny muted">Wenn aktiviert, werden Bild und Gesang gleichzeitig in einem Video mit Ton aufgenommen. Deine Gesangsspur wird zusätzlich als Audio gespeichert und wie bisher an Frau Nolte gesendet. Das Video wird nicht hochgeladen.</p><video id="cameraPreview" autoplay muted playsinline style="display:none;width:100%;max-width:380px;border-radius:12px;background:#111" aria-label="Kameravorschau"></video></div><div class="mic-stage" id="micStage"><div id="recLive">Bereit zur Aufnahme</div><div class="timer" id="recTimer">00:00</div><p class="tiny muted">Nach dem Klick startet ein Countdown von 3 Sekunden. Benutze Kopfhörer.</p><button class="button" id="startRecording" data-action="start-record">● Aufnahme starten</button><button class="button-danger hidden" id="stopRecording" data-action="stop-record">■ Aufnahme beenden</button></div><div id="reviewArea"></div></section>`:'<div class="notice">Du hast gerade kein aktives Lied zum Einsingen. Frau Nolte kann dir eines zuweisen.</div>'}`;}
 function submissionsView(own=false){let arr=own?myRecs():state.recs;return `<h2>${own?'Meine Abgaben':'Eingegangene Aufnahmen'}</h2><p class="muted">${own?'Deine Abgaben liegen geschützt im Schulchor-Speicher.':'Nur berechtigte Lehrkräfte können die eingereichten Stimmen aller Schüler abrufen.'}</p><section class="panel">${arr.length?arr.map(r=>{let s=state.songs.find(x=>x.id===r.song_id),p=state.people.find(x=>x.id===r.student_id);return `<div class="list-row"><div class="row between"><div><b>${esc(s?.title||'Lied')}</b> · ${esc(p?.display_name||p?.username||(own?'Du':'Schüler'))}<div class="tiny muted">${fmtDate(r.created_at)}</div></div><span class="pill">${r.status==='accepted'?'Angenommen':r.status==='rejected'?'Noch einmal einsingen':'Eingegangen'}</span></div><div class="row"><button class="button-secondary" data-listen="${esc(r.id)}">Anhören</button>${!own?`<select class="song-select" data-rec-status="${esc(r.id)}"><option value="submitted" ${r.status==='submitted'?'selected':''}>Eingegangen</option><option value="accepted" ${r.status==='accepted'?'selected':''}>Angenommen</option><option value="rejected" ${r.status==='rejected'?'selected':''}>Bitte erneut</option></select><button class="button-secondary" data-save-rec-status="${esc(r.id)}">Status speichern</button>`:''}</div><div id="audio_${esc(r.id)}"></div></div>`}).join(''):'Hier sind noch keine Aufnahmen.'}</section>`;}
 function studioView(){let songs=state.songs.filter(s=>state.recs.some(r=>r.song_id===s.id));let song=songs.find(s=>s.id===state.songId)||songs[0];if(song)state.songId=song.id;let tracks=state.recs.filter(r=>r.song_id===state.songId);return `<h2>Tonstudio</h2><div class="notice"><b>Zeitliche Ausrichtung:</b> Aufnahmen mit Begleitmusik erhalten eine automatische Startzeit-Korrektur. Zusätzlich kannst du Spuren manuell verschieben. Geräte-Latenz und musikalische Einsätze werden noch nicht automatisch analysiert.</div><section class="panel">${songs.length?`<label for="studioSong">Lied</label><select id="studioSong" class="song-select">${songs.map(s=>`<option value="${esc(s.id)}" ${s.id===state.songId?'selected':''}>${esc(s.title)}</option>`).join('')}</select><h3 style="margin-top:20px">Stimmen (${tracks.length})</h3><div id="mixerTracks">${tracks.map(r=>{let p=state.people.find(x=>x.id===r.student_id);return `<div class="mixer-track"><div><b>${esc(p?.display_name||p?.username||'Schüler')}</b><div class="tiny muted">${fmtDate(r.created_at)}</div></div><div><label for="gain_${esc(r.id)}">Lautstärke <span id="gainlabel_${esc(r.id)}">80 %</span></label><input id="gain_${esc(r.id)}" type="range" min="0" max="150" value="80" data-gain="${esc(r.id)}"></div><div><label for="offset_${esc(r.id)}">Manuelle Korrektur (ms) · Auto: ${-Number(r.reference_lead_ms||0)} ms</label><input id="offset_${esc(r.id)}" type="number" min="-10000" max="10000" step="10" value="0" data-offset="${esc(r.id)}"></div></div>`}).join('')}</div><p class="tiny muted">Die gespeicherte automatische Startkorrektur wird zusätzlich zur manuellen Eingabe berücksichtigt. Positive manuelle Werte starten später; negative schneiden den Anfang ab. Die Korrektur schätzt nur den Beginn der Begleitmusik, nicht die Mikrofon-Latenz.</p><div class="row"><button class="button" data-action="play-mix">▶ Mix anhören</button><button class="button-secondary" data-action="stop-mix">■ Stopp</button><button class="button-secondary" data-action="export-mix">Mix als WAV herunterladen</button></div><p id="studioStatus" class="muted"></p>`:'Noch keine eingereichten Aufnahmen.'}</section>`;}
 function render(){if(!state.user){$('app').innerHTML=loginView();return;}if(!state.profile){$('app').innerHTML='<section class="panel"><h2>Profil nicht gefunden</h2><p>Für dieses Konto ist noch kein Schulchor-Profil eingerichtet. Bitte Frau Nolte benachrichtigen.</p><button class="button" data-action="logout">Abmelden</button></section>';return;}
@@ -156,10 +156,42 @@ async function uploadMedia(){let file=state.trackFile;const song=findSong();if(!
 async function refreshMics(ask=true){const select=$('micSelect');if(!select||!navigator.mediaDevices?.enumerateDevices)return;
   let temp=null;if(ask){temp=await navigator.mediaDevices.getUserMedia({audio:true});}
   try{const devices=(await navigator.mediaDevices.enumerateDevices()).filter(x=>x.kind==='audioinput');select.innerHTML='<option value="">Standardmikrofon</option>'+devices.map((d,i)=>`<option value="${esc(d.deviceId)}" ${d.deviceId===state.deviceId?'selected':''}>${esc(d.label||'Mikrofon '+(i+1))}</option>`).join('');}finally{temp?.getTracks().forEach(t=>t.stop());}}
-function stopRecorder(){state.countdownActive=false;if(state.videoRecorder?.state==='recording'){try{state.videoRecorder.stop()}catch{}}if(state.recorder?.state==='recording'){try{state.recorder.stop()}catch{}}state.recorder=null;state.videoRecorder=null;state.videoStream?.getTracks().forEach(t=>t.stop());state.videoStream=null;state.stream?.getTracks().forEach(t=>t.stop());state.stream=null;if(state.timer)clearInterval(state.timer);state.timer=null;}
+function stopRecorder(){state.countdownActive=false;if(state.recorder?.state==='recording'){try{state.recorder.stop()}catch{}}state.recorder=null;state.videoRecorder=null;state.videoStream?.getTracks().forEach(t=>t.stop());state.videoStream=null;state.stream?.getTracks().forEach(t=>t.stop());state.stream=null;state.pcmCapture?.close();state.pcmCapture=null;if(state.timer)clearInterval(state.timer);state.timer=null;}
 function clearPending(){if(state.pending?.url)URL.revokeObjectURL(state.pending.url);if(state.pending?.videoUrl)URL.revokeObjectURL(state.pending.videoUrl);state.pending=null;}
 function recordingUi(live){const s=$('micStage'),go=$('startRecording'),stop=$('stopRecording');if(!s)return;s.classList.toggle('recording-live',live);if(go)go.classList.toggle('hidden',live);if(stop)stop.classList.toggle('hidden',!live);}
 function setRecordingStatus(message){if($('recLive'))$('recLive').innerHTML=message;}
+// Schreibt die parallel aufgezeichnete Mikrofonspur als WAV für das bestehende Tonstudio.
+function audioPcmToWav(chunks,sampleRate){
+  const frames=chunks.reduce((n,a)=>n+a.length,0);
+  if(!frames)throw Error('Keine Audiospur aufgenommen. Bitte erneut versuchen.');
+  const bytes=44+frames*2,buffer=new ArrayBuffer(bytes),view=new DataView(buffer);
+  const word=(p,s)=>{for(let j=0;j<s.length;j++)view.setUint8(p+j,s.charCodeAt(j));};
+  word(0,'RIFF');view.setUint32(4,bytes-8,true);word(8,'WAVE');word(12,'fmt ');
+  view.setUint32(16,16,true);view.setUint16(20,1,true);view.setUint16(22,1,true);
+  view.setUint32(24,sampleRate,true);view.setUint32(28,sampleRate*2,true);
+  view.setUint16(32,2,true);view.setUint16(34,16,true);word(36,'data');
+  view.setUint32(40,frames*2,true);
+  let p=44;
+  for(const chunk of chunks)for(let i=0;i<chunk.length;i++){
+    const s=Math.max(-1,Math.min(1,chunk[i]));
+    view.setInt16(p,s<0?s*32768:s*32767,true);p+=2;
+  }
+  return new Blob([buffer],{type:'audio/wav'});
+}
+function startPcmCapture(stream){
+  const AudioContextClass=window.AudioContext||window.webkitAudioContext;
+  if(!AudioContextClass)throw Error('Dein Browser kann die Gesangsspur nicht getrennt speichern.');
+  const ctx=new AudioContextClass();
+  const source=ctx.createMediaStreamSource(new MediaStream(stream.getAudioTracks()));
+  const processor=ctx.createScriptProcessor(4096,1,1),chunks=[];
+  processor.onaudioprocess=e=>{
+    chunks.push(new Float32Array(e.inputBuffer.getChannelData(0)));
+    e.outputBuffer.getChannelData(0).fill(0);
+  };
+  source.connect(processor);processor.connect(ctx.destination);
+  return {chunks,sampleRate:ctx.sampleRate,context:ctx,
+    close(){processor.onaudioprocess=null;try{processor.disconnect();source.disconnect();}catch{}ctx.close().catch(()=>{});}};
+}
 async function startRecord(){
   if(state.recorder?.state==='recording'||state.countdownActive)return;
   const song=findSong();
@@ -168,57 +200,47 @@ async function startRecord(){
   clearPending();
   const area=$('reviewArea');if(area)area.innerHTML='';
   const start=$('startRecording');if(start)start.disabled=true;
-  let recorder=null;
   try{
     const id=$('micSelect')?.value||state.deviceId;
     state.deviceId=id;state.countdownActive=true;
-    const useCamera=!!$('cameraEnabled')?.checked;
-    // Die Gesangsaufnahme bleibt bewusst identisch zur bewährten Audio-only-Version.
-    state.stream=await navigator.mediaDevices.getUserMedia({audio:id?{deviceId:{ideal:id},echoCancellation:false,noiseSuppression:false,autoGainControl:false}:{echoCancellation:false,noiseSuppression:false,autoGainControl:false}});
-    const preferred=['audio/webm;codecs=opus','audio/mp4','audio/webm'].find(t=>MediaRecorder.isTypeSupported(t));
-    const chunks=[];let referenceLead=0,videoBlob=null;
-    recorder=new MediaRecorder(state.stream,preferred?{mimeType:preferred}:undefined);
+    const camera=!!$('cameraEnabled')?.checked;
+    const audio=id?{deviceId:{ideal:id},echoCancellation:false,noiseSuppression:false,autoGainControl:false}:{echoCancellation:false,noiseSuppression:false,autoGainControl:false};
+    // Nur EIN MediaRecorder: Bild und Stimme sind damit in exakt demselben Video.
+    state.stream=await navigator.mediaDevices.getUserMedia({audio,video:camera?{width:{ideal:640},height:{ideal:480},frameRate:{ideal:24}}:false});
+    if(camera){
+      const preview=$('cameraPreview');if(preview){preview.srcObject=state.stream;preview.style.display='block';preview.play().catch(()=>{});}
+      state.pcmCapture=startPcmCapture(state.stream);
+      await state.pcmCapture.context.resume();
+    }
+    const supported=camera?
+      ['video/webm;codecs=vp8,opus','video/webm','video/mp4'].find(t=>MediaRecorder.isTypeSupported(t)):
+      ['audio/webm;codecs=opus','audio/mp4','audio/webm'].find(t=>MediaRecorder.isTypeSupported(t));
+    const recorder=new MediaRecorder(state.stream,supported?{mimeType:supported}:undefined);
+    const chunks=[];let referenceLead=0;
     state.recorder=recorder;
     recorder.ondataavailable=e=>{if(e.data?.size)chunks.push(e.data);};
     recorder.onstop=()=>{
+      const recorded=new Blob(chunks,{type:recorder.mimeType||(camera?'video/webm':'audio/webm')});
+      const capture=state.pcmCapture;state.pcmCapture=null;
+      const audioChunks=capture?.chunks||[],sampleRate=capture?.sampleRate||48000;
+      capture?.close();
       state.stream?.getTracks().forEach(t=>t.stop());state.stream=null;
-      state.videoStream?.getTracks().forEach(t=>t.stop());state.videoStream=null;state.videoRecorder=null;
-      const cp=$('cameraPreview');if(cp){cp.srcObject=null;cp.style.display='none';}
+      const preview=$('cameraPreview');if(preview){preview.srcObject=null;preview.style.display='none';}
       if(state.timer)clearInterval(state.timer);state.timer=null;recordingUi(false);
       const media=$('recMedia')?.querySelector('audio,video');if(media)media.pause();
-      const blob=new Blob(chunks,{type:recorder.mimeType||'audio/webm'});
-      if(!blob.size){setRecordingStatus('Aufnahme war leer. Bitte erneut versuchen.');return;}
-      const url=URL.createObjectURL(blob);
-      state.pending={songId:song.id,blob,url,remotePath:null,referenceLeadMs:referenceLead};
-      if(videoBlob?.size){state.pending.videoUrl=URL.createObjectURL(videoBlob);state.pending.videoMime=videoBlob.type;}
-      setRecordingStatus('Aufnahme beendet. Bitte anhören und erst dann abgeben.');renderReview();
-    };
-    if(useCamera){
       try{
-        // Eigenständiger Video-only-Stream: keine zweite gleichzeitige Mikrofonkodierung.
-        state.videoStream=await navigator.mediaDevices.getUserMedia({video:{width:{ideal:640},height:{ideal:480},frameRate:{ideal:24}},audio:false});
-        const preview=$('cameraPreview');
-        if(preview){preview.srcObject=state.videoStream;preview.style.display='block';preview.play().catch(()=>{});}
-        const videoType=['video/webm;codecs=vp8','video/webm','video/mp4'].find(t=>MediaRecorder.isTypeSupported(t));
-        const vc=[];
-        const vr=new MediaRecorder(state.videoStream,videoType?{mimeType:videoType}:undefined);
-        state.videoRecorder=vr;
-        vr.ondataavailable=e=>{if(e.data?.size)vc.push(e.data);};
-        vr.onstop=()=>{
-          videoBlob=new Blob(vc,{type:vr.mimeType||'video/webm'});
-          if(state.pending?.songId===song.id&&videoBlob.size){
-            if(state.pending.videoUrl)URL.revokeObjectURL(state.pending.videoUrl);
-            state.pending.videoUrl=URL.createObjectURL(videoBlob);
-            state.pending.videoMime=videoBlob.type;
-            renderReview();
-          }
-        };
-      }catch(cameraError){
-        console.warn('Kamera nicht verfügbar:',cameraError);
-        state.videoStream?.getTracks().forEach(t=>t.stop());state.videoStream=null;state.videoRecorder=null;
-        notify('Kamera nicht verfügbar. Die Gesangsaufnahme funktioniert weiterhin ohne Video.',true);
-      }
-    }
+        if(!recorded.size)throw Error('Aufnahme war leer. Bitte erneut versuchen.');
+        const audioBlob=camera?audioPcmToWav(audioChunks,sampleRate):recorded;
+        const url=URL.createObjectURL(audioBlob);
+        state.pending={songId:song.id,blob:audioBlob,url,remotePath:null,referenceLeadMs:referenceLead};
+        if(camera){
+          state.pending.videoUrl=URL.createObjectURL(recorded);
+          state.pending.videoMime=recorded.type;
+        }
+        setRecordingStatus('Aufnahme beendet. Bitte Ton und Video kontrollieren.');renderReview();
+      }catch(e){setRecordingStatus(errText(e));notify(errText(e),true);}
+    };
+    recorder.onerror=e=>notify('Aufnahmefehler: '+errText(e.error||e),true);
     for(let n=3;n>0;n--){
       setRecordingStatus(`<b>Aufnahme startet in ${n} …</b>`);
       await new Promise(r=>setTimeout(r,950));
@@ -226,15 +248,6 @@ async function startRecord(){
     if(state.recorder!==recorder)return;
     state.countdownActive=false;
     recorder.start(300);
-    if(state.videoRecorder){
-      try{state.videoRecorder.start(300);}
-      catch(videoError){
-        console.warn('Kameraaufnahme konnte nicht starten:',videoError);
-        state.videoRecorder=null;state.videoStream?.getTracks().forEach(t=>t.stop());state.videoStream=null;
-        const preview=$('cameraPreview');if(preview){preview.srcObject=null;preview.style.display='none';}
-        notify('Kameraaufnahme fehlgeschlagen. Gesang wird trotzdem aufgenommen.',true);
-      }
-    }
     const localStart=performance.now();state.started=Date.now();
     setRecordingStatus('<strong><span class="mic-dot"></span>AUFNAHME LÄUFT</strong>');recordingUi(true);
     const media=$('recMedia')?.querySelector('audio,video');
@@ -244,14 +257,17 @@ async function startRecord(){
     }
     if($('recTimer'))$('recTimer').textContent='00:00';
     state.timer=setInterval(()=>{if($('recTimer'))$('recTimer').textContent=humanDuration((Date.now()-state.started)/1000);},250);
-  }catch(e){
-    stopRecorder();recordingUi(false);setRecordingStatus('Aufnahme konnte nicht starten.');
-    throw e;
-  }finally{if(start)start.disabled=false;}
+  }catch(e){stopRecorder();recordingUi(false);setRecordingStatus('Aufnahme konnte nicht starten.');throw e;}
+  finally{if(start)start.disabled=false;}
 }
-function finishRecord(){if(state.recorder?.state==='recording'){if(state.videoRecorder?.state==='recording')state.videoRecorder.stop();state.recorder.stop();setRecordingStatus('Aufnahme wird vorbereitet …');}}
+function finishRecord(){
+  if(state.recorder?.state==='recording'){
+    state.recorder.stop();
+    setRecordingStatus('Aufnahme wird vorbereitet …');
+  }
+}
 function renderReview(){const p=state.pending,area=$('reviewArea');if(!area||!p||p.songId!==state.songId)return;
-  area.innerHTML=`<div class="success-box"><h3>Aufnahme anhören</h3><p>Erst anhören. Wenn du zufrieden bist, gib sie an Frau Nolte ab.</p><audio controls class="media" src="${esc(p.url)}"></audio>${p.videoUrl?`<h4>Dein Kameravideo</h4><video controls playsinline class="media" src="${esc(p.videoUrl)}"></video><p class="tiny muted">Stummes Kameravideo nur auf diesem Gerät. Deine Stimme ist in der separaten Gesangsaufnahme. Das Video wird nicht an Frau Nolte hochgeladen.</p><a class="button-secondary" href="${esc(p.videoUrl)}" download="schulchor-kamera.${p.videoMime?.includes("mp4")?"mp4":"webm"}">Video auf diesem PC speichern</a>`:""}<div class="row"><button class="button" data-action="submit-record" ${p.submitting?'disabled':''}>✓ An Frau Nolte abgeben</button><button class="button-secondary" data-action="discard-record">Neu aufnehmen</button></div><p id="submitStatus" class="tiny">Noch nicht abgegeben.</p></div>`;}
+  area.innerHTML=`<div class="success-box"><h3>Aufnahme anhören</h3><p>Erst anhören. Wenn du zufrieden bist, gib sie an Frau Nolte ab.</p><audio controls class="media" src="${esc(p.url)}"></audio>${p.videoUrl?`<h4>Dein Kameravideo</h4><video controls playsinline class="media" src="${esc(p.videoUrl)}"></video><p class="tiny muted">Kameravideo mit deinem Gesang und Ton, nur auf diesem Gerät. Die Gesangsaufnahme wird separat an Frau Nolte abgegeben. Das Video wird nicht hochgeladen.</p><a class="button-secondary" href="${esc(p.videoUrl)}" download="schulchor-kamera.${p.videoMime?.includes("mp4")?"mp4":"webm"}">Video auf diesem PC speichern</a>`:""}<div class="row"><button class="button" data-action="submit-record" ${p.submitting?'disabled':''}>✓ An Frau Nolte abgeben</button><button class="button-secondary" data-action="discard-record">Neu aufnehmen</button></div><p id="submitStatus" class="tiny">Noch nicht abgegeben.</p></div>`;}
 async function submitRecord(){const p=state.pending;if(!p||p.songId!==state.songId)throw Error('Keine Aufnahme zum Abgeben vorhanden.');if(p.submitting)return;p.submitting=true;renderReview();const song=findSong();if(!song||!canRecord(song))throw Error('Das Lied ist nicht mehr zum Einsingen freigegeben.');
   if(p.blob.size>maxUpload)throw Error('Die Aufnahme ist größer als 48 MB. Bitte kürzer aufnehmen.');
   let ext=p.blob.type.includes('mp4')?'m4a':p.blob.type.includes('ogg')?'ogg':'webm';
