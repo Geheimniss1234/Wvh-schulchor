@@ -184,12 +184,14 @@ function startPcmCapture(stream){
   const ctx=new AudioContextClass();
   const source=ctx.createMediaStreamSource(new MediaStream(stream.getAudioTracks()));
   const processor=ctx.createScriptProcessor(4096,1,1),chunks=[];
+  let recording=false;
   processor.onaudioprocess=e=>{
-    chunks.push(new Float32Array(e.inputBuffer.getChannelData(0)));
+    if(recording)chunks.push(new Float32Array(e.inputBuffer.getChannelData(0)));
     e.outputBuffer.getChannelData(0).fill(0);
   };
   source.connect(processor);processor.connect(ctx.destination);
   return {chunks,sampleRate:ctx.sampleRate,context:ctx,
+    begin(){recording=true;},end(){recording=false;},
     close(){processor.onaudioprocess=null;try{processor.disconnect();source.disconnect();}catch{}ctx.close().catch(()=>{});}};
 }
 async function startRecord(){
@@ -221,7 +223,7 @@ async function startRecord(){
     recorder.ondataavailable=e=>{if(e.data?.size)chunks.push(e.data);};
     recorder.onstop=()=>{
       const recorded=new Blob(chunks,{type:recorder.mimeType||(camera?'video/webm':'audio/webm')});
-      const capture=state.pcmCapture;state.pcmCapture=null;
+      const capture=state.pcmCapture;capture?.end();state.pcmCapture=null;
       const audioChunks=capture?.chunks||[],sampleRate=capture?.sampleRate||48000;
       capture?.close();
       state.stream?.getTracks().forEach(t=>t.stop());state.stream=null;
@@ -248,6 +250,7 @@ async function startRecord(){
     if(state.recorder!==recorder)return;
     state.countdownActive=false;
     recorder.start(300);
+    state.pcmCapture?.begin();
     const localStart=performance.now();state.started=Date.now();
     setRecordingStatus('<strong><span class="mic-dot"></span>AUFNAHME LÄUFT</strong>');recordingUi(true);
     const media=$('recMedia')?.querySelector('audio,video');
