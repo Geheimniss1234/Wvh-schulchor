@@ -168,14 +168,15 @@ async function startRecord(){if(state.recorder?.state==='recording')return;const
     let videoBlob=null;const videoType=useCamera?['video/webm;codecs=vp8,opus','video/webm','video/mp4'].find(t=>MediaRecorder.isTypeSupported(t)):null;
     if(useCamera){const vt=state.stream.getVideoTracks();const at=state.stream.getAudioTracks();state.videoStream=new MediaStream([...vt,...at]);const vr=new MediaRecorder(state.videoStream,videoType?{mimeType:videoType}:undefined),vc=[];state.videoRecorder=vr;vr.ondataavailable=e=>{if(e.data?.size)vc.push(e.data);};vr.onstop=()=>{videoBlob=new Blob(vc,{type:vr.mimeType||'video/webm'});if(state.pending?.songId===song.id&&videoBlob.size){state.pending.videoUrl=URL.createObjectURL(videoBlob);state.pending.videoMime=videoBlob.type;renderReview();}};}
     const preferred=['audio/webm;codecs=opus','audio/mp4','audio/webm'].find(t=>MediaRecorder.isTypeSupported(t));
-    const recorder=new MediaRecorder(state.stream,preferred?{mimeType:preferred}:undefined),chunks=[];let referenceLead=0;state.recorder=recorder;
+    const audioOnlyStream=new MediaStream(state.stream.getAudioTracks());
+    const recorder=new MediaRecorder(audioOnlyStream,preferred?{mimeType:preferred}:undefined),chunks=[];let referenceLead=0;state.recorder=recorder;
     recorder.ondataavailable=e=>{if(e.data?.size)chunks.push(e.data);};
     recorder.onstop=()=>{state.stream?.getTracks().forEach(t=>t.stop());state.stream=null;state.videoStream=null;state.videoRecorder=null;const cp=$('cameraPreview');if(cp){cp.srcObject=null;cp.style.display='none';}if(state.timer)clearInterval(state.timer);state.timer=null;recordingUi(false);const media=$('recMedia')?.querySelector('audio,video');if(media)media.pause();let blob=new Blob(chunks,{type:recorder.mimeType||'audio/webm'});if(!blob.size){setRecordingStatus('Aufnahme war leer. Bitte erneut versuchen.');return;}let url=URL.createObjectURL(blob);state.pending={songId:song.id,blob,url,remotePath:null,referenceLeadMs:referenceLead};if(videoBlob?.size){state.pending.videoUrl=URL.createObjectURL(videoBlob);state.pending.videoMime=videoBlob.type;}setRecordingStatus('Aufnahme beendet. Bitte anhören und erst dann abgeben.');renderReview();};
     for(let n=3;n>0;n--){setRecordingStatus(`<b>Aufnahme startet in ${n} …</b>`);await new Promise(r=>setTimeout(r,950));}
     if(state.recorder!==recorder)return;
     // Erst Aufnahme starten, dann Referenz abspielen: So kann die Vorlaufzeit
     // für die spätere Mischspur geschätzt und gespeichert werden.
-    state.countdownActive=false;recorder.start(300);if(state.videoRecorder)state.videoRecorder.start(300);const localStart=performance.now();state.started=Date.now();
+    state.countdownActive=false;recorder.start(300);if(state.videoRecorder){try{state.videoRecorder.start(300);}catch(videoError){console.warn('Kameravideo konnte nicht starten:',videoError);state.videoRecorder=null;notify('Kamera konnte nicht aufgenommen werden. Deine Gesangsaufnahme läuft trotzdem weiter.',true);}}const localStart=performance.now();state.started=Date.now();
     setRecordingStatus('<strong><span class="mic-dot"></span>AUFNAHME LÄUFT</strong>');recordingUi(true);
     const media=$('recMedia')?.querySelector('audio,video');if(media){
       try{media.pause();media.currentTime=0;await media.play();referenceLead=Math.min(120000,Math.max(0,Math.round(performance.now()-localStart)));}
