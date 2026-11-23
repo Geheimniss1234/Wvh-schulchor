@@ -42,8 +42,8 @@ function manageSongView(){const song=findSong();if(!song)return `<p>Lied nicht g
   const opts=state.people.filter(p=>p.role==='student');
   return `<div class="row"><button class="button-secondary" data-page="songs">← Lieder</button></div><h2>${esc(song.title)}</h2><p class="muted">${esc(song.description||'')}</p><section class="panel"><h3>Veröffentlichung</h3><div class="row"><select id="songStatusEdit" class="song-select"><option value="draft" ${song.status==='draft'?'selected':''}>Entwurf</option><option value="active" ${song.status==='active'?'selected':''}>Zum Einsingen freigeben</option><option value="finished" ${song.status==='finished'?'selected':''}>Abgeschlossen</option></select><button class="button-secondary" data-action="save-song-status">Speichern</button></div></section>
   <section class="panel"><h3>Begleitmusik oder Video hochladen</h3><p class="muted">MP3, WAV, M4A, OGG, WEBM oder MP4. Schüler können die Begleitung beim Einsingen hören oder ein Video mitlesen. Dateien bis 48 MB. Größere Videos werden in unterstützten Browsern automatisch verkleinert; dies kann so lange wie das Video dauern.</p><div class="dropzone" id="uploadZone"><b>Datei hierherziehen</b><p>oder</p><input id="mediaFile" type="file" accept="audio/*,video/mp4,video/webm"><p id="mediaSelection" class="tiny muted">Noch keine Datei ausgewählt</p><button class="button" data-action="upload-media" type="button">Begleitung hochladen</button></div><div id="mediaArea">${song.accompaniment_path?'<p class="tiny">Gespeicherte Begleitung wird geladen …</p>':'<p class="muted">Noch keine Datei hochgeladen.</p>'}</div></section>
-  <section class="panel"><h3>Schüler zuweisen</h3><p class="muted">Nur zugewiesene Schüler sehen dieses Lied.</p><div class="checkbox-list">${opts.length?opts.map(p=>`<div class="checkbox-row"><input type="checkbox" class="assignBox" id="assign_${esc(p.id)}" value="${esc(p.id)}" ${assigned.has(p.id)?'checked':''}><label for="assign_${esc(p.id)}">${esc(p.display_name||p.username||'Schüler')}</label></div>`).join(''):'Noch keine Schülerkonten. Lege sie unter „Schülerkonten“ an.'}</div><p><button class="button-secondary" data-action="save-assignments">Zuweisungen speichern</button></p></section><section class="panel"><h3>Lied entfernen</h3><p class="muted tiny">Nach Bestätigung werden das Lied, alle zugehörigen Aufnahmen, Begleitdateien und Zuweisungen endgültig gelöscht. Andere Lieder und Schülerkonten bleiben bestehen.</p><button class="button-danger" data-action="delete-song">Lied löschen …</button></section>`;}
-function peopleView(){const students=state.people.filter(p=>p.role==='student');return `<h2>Schülerkonten</h2><p class="tiny muted">Mit „Schüler hinzufügen“ links wird ein neues Konto erstellt. Beim Deaktivieren bleiben Konten und Aufnahmen erhalten. Löschen ist nur ohne Aufnahmen möglich.</p><p class="muted">Frau Nolte verwaltet die Zugänge. Das Passwort wird sicher erzeugt und nur unmittelbar nach Erstellung oder Zurücksetzung angezeigt.</p><p class="tiny muted">Aus Sicherheitsgründen lassen sich bestehende Passwörter nicht anzeigen. Mit „Passwort neu vergeben“ kann Frau Nolte ein neues Passwort erzeugen und einmalig sehen. Das bisherige Passwort wird dabei ungültig.</p><div class="two-col"><section class="panel"><h3>Schüler hinzufügen</h3><form id="createStudentForm" class="stack"><div><label for="newStudentName">Anzeigename</label><input id="newStudentName" name="name" required maxlength="70" placeholder="Vorname oder Kürzel"></div><div><label for="newStudentEmail">E-Mail-Adresse des Schülers</label><input id="newStudentEmail" name="email" type="email" required autocomplete="off" placeholder="schule@example.de"></div><button class="button">Zugang erstellen</button></form><p class="tiny muted">Für diese erste Version erfolgt die Anmeldung mit E-Mail + zugeteiltem Passwort. Für Benutzername-ohne-E-Mail wäre eine zusätzliche gesicherte Zuordnung nötig.</p><div id="studentCreated"></div></section><section class="panel"><h3>Vorhandene Konten (${students.length})</h3>${students.length?students.map(p=>`<div class="list-row"><b>${esc(p.display_name||p.username)}</b> ${p.is_active===false?'<span class="pill">Deaktiviert</span>':''}<div class="tiny muted">${esc(p.login_email||'')}</div><div class="row"><button class="button-secondary" data-reset-student="${esc(p.id)}" ${p.is_active===false?'disabled title="Bitte erst reaktivieren"':''}>Passwort neu vergeben</button><button class="button-secondary" data-toggle-student="${esc(p.id)}">${p.is_active===false?'Reaktivieren …':'Deaktivieren …'}</button><button class="button-delete-subtle" data-delete-student="${esc(p.id)}" title="Schülerkonto nach Bestätigung löschen">Löschen …</button></div></div>`).join(''):'Noch keine Schülerkonten.'}</section></div>`;}
+  <section class="panel"><h3>Schüler zuweisen</h3><p class="muted">Nur zugewiesene Schüler sehen dieses Lied.</p><div class="checkbox-list">${opts.length?opts.map(p=>`<div class="checkbox-row"><input type="checkbox" class="assignBox" id="assign_${esc(p.id)}" value="${esc(p.id)}" ${assigned.has(p.id)?'checked':''}><label for="assign_${esc(p.id)}">${esc(p.display_name||p.username||'Schüler')}</label></div>`).join(''):'Noch keine Schülerkonten. Lege sie unter „Schülerkonten“ an.'}</div><p><button class="button-secondary" data-action="save-assignments">Zuweisungen speichern</button></p></section><section class="panel"><h3>Lied entfernen</h3><p class="muted tiny">Nach Bestätigung werden das Lied, alle zugehörigen Aufnahmen, Begleitdateien und Zuweisungen endgültig gelöscht. Andere Lieder und Schülerkonten bleiben bestehen.</p><button class="button-delete-subtle" data-action="delete-song">Löschen</button></section>`;}
+function peopleView(){const students=state.people.filter(p=>p.role==='student');return `<h2>Schülerkonten</h2><p class="tiny muted">Mit „Schüler hinzufügen“ links wird ein neues Konto erstellt. Beim Deaktivieren bleiben Konten und Aufnahmen erhalten. Löschen ist nur ohne Aufnahmen möglich.</p><p class="muted">Frau Nolte verwaltet die Zugänge. Das Passwort wird sicher erzeugt und nur unmittelbar nach Erstellung oder Zurücksetzung angezeigt.</p><p class="tiny muted">Aus Sicherheitsgründen lassen sich bestehende Passwörter nicht anzeigen. Mit „Passwort neu vergeben“ kann Frau Nolte ein neues Passwort erzeugen und einmalig sehen. Das bisherige Passwort wird dabei ungültig.</p><div class="two-col"><section class="panel"><h3>Schüler hinzufügen</h3><form id="createStudentForm" class="stack"><div><label for="newStudentName">Anzeigename</label><input id="newStudentName" name="name" required maxlength="70" placeholder="Vorname oder Kürzel"></div><div><label for="newStudentEmail">E-Mail-Adresse des Schülers</label><input id="newStudentEmail" name="email" type="email" required autocomplete="off" placeholder="schule@example.de"></div><button class="button">Zugang erstellen</button></form><p class="tiny muted">Für diese erste Version erfolgt die Anmeldung mit E-Mail + zugeteiltem Passwort. Für Benutzername-ohne-E-Mail wäre eine zusätzliche gesicherte Zuordnung nötig.</p><div id="studentCreated"></div></section><section class="panel"><h3>Vorhandene Konten (${students.length})</h3>${students.length?students.map(p=>`<div class="list-row"><b>${esc(p.display_name||p.username)}</b> ${p.is_active===false?'<span class="pill">Deaktiviert</span>':''}<div class="tiny muted">${esc(p.login_email||'')}</div><div class="row"><button class="button-secondary" data-reset-student="${esc(p.id)}" ${p.is_active===false?'disabled title="Bitte erst reaktivieren"':''}>Passwort neu vergeben</button><button class="button-secondary" data-toggle-student="${esc(p.id)}">${p.is_active===false?'Reaktivieren …':'Deaktivieren …'}</button><button class="button-delete-subtle" data-delete-student="${esc(p.id)}" title="Schülerkonto nach Bestätigung löschen">Löschen</button></div></div>`).join(''):'Noch keine Schülerkonten.'}</section></div>`;}
 function studentSongView(){const song=findSong();if(!song)return `<p>Bitte wähle erst ein Lied.</p>`;const mine=myRecs(song.id).length;return `<div class="row"><button class="button-secondary" data-page="songs">← Meine Lieder</button></div><section class="panel"><h2>${esc(song.title)}</h2>${pill(song)}<p>${esc(song.description||'')}</p><p><b>${mine} eigene Abgabe(n)</b> · ${esc(counts(song))}</p>${song.accompaniment_path?'<p>Frau Nolte hat eine Begleitung bereitgestellt.</p>':'<div class="notice">Für dieses Lied wurde noch keine Begleitung hochgeladen.</div>'}<div class="row">${song.status==='active'?`<button class="button" data-action="go-record">Jetzt einsingen</button>`:''}<button class="button-secondary" data-page="mine">Meine Abgaben</button></div></section>`;}
 function recordView(){let songs=state.songs.filter(s=>canRecord(s));let selected=songs.find(s=>s.id===state.songId)||songs[0];if(selected)state.songId=selected.id;
   return `<h2>Deine Stimme einsingen</h2><p class="muted">Drei Schritte: Begleitung anhören, aufnehmen, kontrollieren und abgeben.</p>${songs.length?`<section class="panel"><label for="recSongSelect">Welches Lied?</label><select id="recSongSelect" class="song-select">${songs.map(s=>`<option value="${esc(s.id)}" ${s.id===state.songId?'selected':''}>${esc(s.title)}</option>`).join('')}</select><div id="recMedia"><p class="muted">Begleitung wird geladen …</p></div><label for="micSelect">Mikrofon</label><div class="row"><select id="micSelect" class="song-select"><option value="">Standardmikrofon</option></select><button class="button-secondary" data-action="refresh-mics">Mikrofone anzeigen</button></div><div class="panel" style="margin:14px 0"><label><input type="checkbox" id="cameraEnabled"> Kamera mitaufnehmen (freiwillig)</label><p class="tiny muted">Wenn aktiviert, werden Bild und Gesang gleichzeitig in einem Video mit Ton aufgenommen. Deine Gesangsspur wird zusätzlich als Audio gespeichert und wie bisher an Frau Nolte gesendet. Das Video wird nicht hochgeladen.</p><video id="cameraPreview" autoplay muted playsinline style="display:none;width:100%;max-width:380px;border-radius:12px;background:#111" aria-label="Kameravorschau"></video></div><div class="mic-stage" id="micStage"><div id="recLive">Bereit zur Aufnahme</div><div class="timer" id="recTimer">00:00</div><p class="tiny muted">Nach dem Klick startet ein Countdown von 3 Sekunden. Benutze Kopfhörer.</p><button class="button" id="startRecording" data-action="start-record">● Aufnahme starten</button><button class="button-danger hidden" id="stopRecording" data-action="stop-record">■ Aufnahme beenden</button></div><div id="reviewArea"></div></section>`:'<div class="notice">Du hast gerade kein aktives Lied zum Einsingen. Frau Nolte kann dir eines zuweisen.</div>'}`;}
@@ -286,65 +286,39 @@ async function saveRecStatus(id){const s=document.querySelector(`[data-rec-statu
 async function createStudent(form){const name=form.elements.name.value.trim(),email=form.elements.email.value.trim();if(!name||!email)throw Error('Name und E-Mail sind erforderlich.');const {data,error}=await sb.functions.invoke('manage-students',{body:{action:'create_student',name,email}});if(error)throw error;if(!data?.ok)throw Error(data?.error||'Konto konnte nicht erstellt werden.');
   await refresh();state.page='people';render();showOneTimeCredentials(data.email,data.password,data.name);notify('Schülerkonto erstellt. Zugangsdaten jetzt sicher weitergeben.');}
 function confirmNamedDelete(type,name){
-  // Eigenes Bestätigungsfenster statt prompt()/confirm(): funktioniert auch im In-App-Browser.
+  // Eine einzige, einfache Bestätigung – keine Namen eintippen.
   return new Promise(resolve=>{
-    const previous=document.getElementById('deleteConfirmOverlay');
-    if(previous){resolve(false);return;}
+    if(document.getElementById('deleteConfirmOverlay')){resolve(false);return;}
     const overlay=document.createElement('div');
     overlay.id='deleteConfirmOverlay';
     overlay.className='delete-confirm-overlay';
-    overlay.setAttribute('role','presentation');
     const dialog=document.createElement('section');
     dialog.className='delete-confirm-dialog';
     dialog.setAttribute('role','dialog');
     dialog.setAttribute('aria-modal','true');
     dialog.setAttribute('aria-labelledby','deleteConfirmTitle');
-    const title=document.createElement('h3');
-    title.id='deleteConfirmTitle';
-    title.textContent=type==='song'?'Lied löschen?':'Schülerkonto löschen?';
-    const explanation=document.createElement('p');
-    explanation.textContent=type==='song'?'ACHTUNG: Das Lied, seine Gesangsaufnahmen, Begleitdatei und Zuweisungen werden dauerhaft gelöscht. Andere Lieder und Konten bleiben erhalten. Diese Aktion kann nicht rückgängig gemacht werden.':'Diese Aktion kann nicht rückgängig gemacht werden. Konten mit vorhandenen Aufnahmen können weiterhin nur deaktiviert werden.';
-    const caption=document.createElement('label');
-    caption.htmlFor='deleteConfirmName';
-    caption.textContent='Zur Bestätigung den vollständigen '+(type==='song'?'Liedtitel':'Schülernamen')+' eingeben:';
-    const expected=document.createElement('p');
-    expected.className='delete-confirm-expected';
-    expected.textContent=name;
-    const input=document.createElement('input');
-    input.id='deleteConfirmName';
-    input.type='text';
-    input.autocomplete='off';
-    input.spellcheck=false;
+    const heading=document.createElement('h3');
+    heading.id='deleteConfirmTitle';
+    heading.textContent=type==='song'?'Lied löschen?':'Schülerkonto löschen?';
+    const text=document.createElement('p');
+    text.textContent=type==='song'
+      ? '„'+name+'“ einschließlich seiner Aufnahmen und Begleitdateien dauerhaft löschen? Das kann nicht rückgängig gemacht werden.'
+      : 'Schülerkonto „'+name+'“ dauerhaft löschen? Konten mit vorhandenen Aufnahmen können stattdessen deaktiviert werden.';
     const actions=document.createElement('div');
     actions.className='row delete-confirm-actions';
     const cancel=document.createElement('button');
-    cancel.type='button';
-    cancel.className='button-secondary';
-    cancel.textContent='Abbrechen';
+    cancel.type='button';cancel.className='button-secondary';cancel.textContent='Abbrechen';
     const proceed=document.createElement('button');
-    proceed.type='button';
-    proceed.className='button-delete-subtle';
-    proceed.textContent='Endgültig löschen';
-    proceed.disabled=true;
+    proceed.type='button';proceed.className='button-delete-subtle';proceed.textContent='Ja, löschen';
     actions.append(cancel,proceed);
-    dialog.append(title,explanation,caption,expected,input,actions);
-    overlay.append(dialog);
-    document.body.append(overlay);
-    const finish=answer=>{
-      document.removeEventListener('keydown',onKey);
-      overlay.remove();
-      resolve(answer);
-    };
-    const onKey=e=>{
-      if(e.key==='Escape'){e.preventDefault();finish(false);}
-      if(e.key==='Enter'&&document.activeElement===input&&input.value===name){e.preventDefault();finish(true);}
-    };
+    dialog.append(heading,text,actions);overlay.append(dialog);document.body.append(overlay);
+    const finish=answer=>{document.removeEventListener('keydown',onKey);overlay.remove();resolve(answer);};
+    const onKey=e=>{if(e.key==='Escape'){e.preventDefault();finish(false);}};
     document.addEventListener('keydown',onKey);
-    input.addEventListener('input',()=>{proceed.disabled=input.value!==name;});
     cancel.addEventListener('click',()=>finish(false));
-    proceed.addEventListener('click',()=>{if(input.value===name)finish(true);});
+    proceed.addEventListener('click',()=>finish(true));
     overlay.addEventListener('click',e=>{if(e.target===overlay)finish(false);});
-    input.focus();
+    cancel.focus();
   });
 }
 async function adminFunctionResult(result){
