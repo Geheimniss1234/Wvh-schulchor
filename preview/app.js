@@ -287,7 +287,7 @@ async function createStudent(form){const name=form.elements.name.value.trim(),em
   await refresh();state.page='people';render();showOneTimeCredentials(data.email,data.password,data.name);notify('Schülerkonto erstellt. Zugangsdaten jetzt sicher weitergeben.');}
 async function confirmNamedDelete(type,name){
   const message=type==='song'?'Lied':'Schülerkonto';
-  if(!confirm(message+' „'+name+'“ wirklich löschen?\\n\\nNicht rückgängig zu machen. Vorhandene Aufnahmen und Begleitdateien verhindern das Löschen.'))return false;
+  if(!confirm(message+' „'+name+'“ wirklich löschen?\n\nNicht rückgängig zu machen. Vorhandene Aufnahmen und Begleitdateien verhindern das Löschen.'))return false;
   const typed=prompt('Zur Sicherheit den vollständigen '+(type==='song'?'Liedtitel':'Schülernamen')+' eingeben: '+name);
   return typed!==null&&typed===name;
 }
