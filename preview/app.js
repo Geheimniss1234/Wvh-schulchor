@@ -417,12 +417,12 @@ async function getMixerTracks(){let settings=mixSettings();if(!settings.length)t
 async function getAccompanimentTrack(){
   const song=findSong();
   if(!song?.accompaniment_path)return null;
-  if(mediaIsVideo(song.accompaniment_path,song.accompaniment_mime))throw Error('Die Videobegleitung kann nicht als Tonspur gemischt werden. Bitte eine MP3 oder andere Audiodatei hochladen.');
+  // AudioContext kann bei unterstützten MP4/WebM-Codecs auch die Tonspur eines Videos dekodieren.
   const {data,error}=await sb.storage.from('accompaniments').createSignedUrl(song.accompaniment_path,900);
   if(error)throw error;
   const resp=await fetch(data.signedUrl);if(!resp.ok)throw Error('Begleitmusik konnte nicht geladen werden.');
   const ctx=state.audioContext||(state.audioContext=new (window.AudioContext||window.webkitAudioContext)());
-  try{return await ctx.decodeAudioData(await resp.arrayBuffer());}catch{throw Error('Begleitmusik konnte nicht als Audiodatei gelesen werden.');}
+  try{return await ctx.decodeAudioData(await resp.arrayBuffer());}catch{throw Error('Die Tonspur dieser Begleitdatei konnte im Browser nicht gelesen werden. Versuche einen aktuellen Chrome- oder Edge-Browser oder lade eine MP3 hoch.');}
 }
 function stopMix(){state.studioSources.forEach(s=>{try{s.stop()}catch(e){}});state.studioSources=[];}
 async function playMix(){stopMix();const status=$('studioStatus');if(status)status.textContent='Spuren werden geladen …';let tracks=await getMixerTracks();const accompaniment=$('includeAccompaniment')?.checked?await getAccompanimentTrack():null;const ctx=state.audioContext,start=ctx.currentTime+.15,headroom=Math.max(1,Math.sqrt(tracks.length+(accompaniment?1:0)));if(accompaniment){const src=ctx.createBufferSource(),gain=ctx.createGain();src.buffer=accompaniment;gain.gain.value=.8/headroom;src.connect(gain).connect(ctx.destination);src.start(start);state.studioSources.push(src);}tracks.forEach(t=>{const src=ctx.createBufferSource(),gain=ctx.createGain();src.buffer=t.buffer;gain.gain.value=t.volume/headroom;src.connect(gain).connect(ctx.destination);src.start(start+Math.max(0,t.offset),Math.max(0,-t.offset));state.studioSources.push(src);});if(status)status.textContent='Mix wird abgespielt.';}
