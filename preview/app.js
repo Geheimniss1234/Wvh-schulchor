@@ -405,7 +405,7 @@ async function deleteSong(){
   if(!isTeacher())throw Error('Nur Lehrkräfte können Lieder löschen.');
   const song=findSong();if(!song)throw Error('Lied nicht gefunden.');
   if(!await confirmNamedDelete('song',song.title))return;
-  const {data,error}=await sb.functions.invoke('manage-students',{body:{action:'delete_song',songId:song.id,confirmTitle:song.title}});
+  const {data,error}=await sb.functions.invoke('manage-students',{body:{action:'delete_song',songId:song.id,confirmTitle:song.title,deleteAssociatedData:true}});
   const result=await adminFunctionResult({data,error});
   state.songId=null;state.page='songs';await refresh();
   const warning=(result.warnings||[]).join(' ');
