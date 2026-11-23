@@ -82,3 +82,12 @@
 /* Musiknote ohne sichtbare Maus-Interaktionssignale */
 .notes .demo-note,.notes .demo-note:hover,.notes .demo-note:active,.notes .demo-note:focus:not(:focus-visible){color:var(--gold)!important;background:none!important;border:0!important;outline:none!important;box-shadow:none!important;transform:none!important;text-decoration:none!important;filter:none!important;cursor:default!important;-webkit-tap-highlight-color:transparent;appearance:none}
 .notes .demo-note:focus-visible{outline:2px solid #fff;outline-offset:2px}
+
+/* In-app-browser-kompatible Bestätigung für Löschaktionen. */
+.delete-confirm-overlay{position:fixed;inset:0;z-index:10000;background:rgba(11,29,23,.62);display:flex;align-items:center;justify-content:center;padding:20px}
+.delete-confirm-dialog{background:#fff;color:var(--ink);border-radius:14px;box-shadow:0 18px 60px rgba(0,0,0,.25);width:min(100%,475px);max-height:90vh;overflow:auto;padding:25px}
+.delete-confirm-dialog h3{font-size:24px;margin:0 0 12px}
+.delete-confirm-dialog label{display:block;font-weight:600;margin:14px 0 4px}
+.delete-confirm-dialog input{display:block;width:100%;border:1px solid #9db2a7;border-radius:9px;padding:11px 12px}
+.delete-confirm-expected{padding:9px 12px;background:#f3f6f2;border:1px solid var(--line);border-radius:8px;font-weight:600;overflow-wrap:anywhere}
+.delete-confirm-actions{justify-content:flex-end;margin-top:19px}
