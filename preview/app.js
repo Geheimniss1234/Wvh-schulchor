@@ -285,11 +285,67 @@ async function listenRecord(id){const r=state.recs.find(r=>r.id===id);if(!r)thro
 async function saveRecStatus(id){const s=document.querySelector(`[data-rec-status="${CSS.escape(id)}"]`);if(!s)return;throwIfError(await sb.from('recordings').update({status:s.value}).eq('id',id));await refresh();notify('Aufnahmestatus geändert.');}
 async function createStudent(form){const name=form.elements.name.value.trim(),email=form.elements.email.value.trim();if(!name||!email)throw Error('Name und E-Mail sind erforderlich.');const {data,error}=await sb.functions.invoke('manage-students',{body:{action:'create_student',name,email}});if(error)throw error;if(!data?.ok)throw Error(data?.error||'Konto konnte nicht erstellt werden.');
   await refresh();state.page='people';render();showOneTimeCredentials(data.email,data.password,data.name);notify('Schülerkonto erstellt. Zugangsdaten jetzt sicher weitergeben.');}
-async function confirmNamedDelete(type,name){
-  const message=type==='song'?'Lied':'Schülerkonto';
-  if(!confirm(message+' „'+name+'“ wirklich löschen?\n\nNicht rückgängig zu machen. Vorhandene Aufnahmen und Begleitdateien verhindern das Löschen.'))return false;
-  const typed=prompt('Zur Sicherheit den vollständigen '+(type==='song'?'Liedtitel':'Schülernamen')+' eingeben: '+name);
-  return typed!==null&&typed===name;
+function confirmNamedDelete(type,name){
+  // Eigenes Bestätigungsfenster statt prompt()/confirm(): funktioniert auch im In-App-Browser.
+  return new Promise(resolve=>{
+    const previous=document.getElementById('deleteConfirmOverlay');
+    if(previous){resolve(false);return;}
+    const overlay=document.createElement('div');
+    overlay.id='deleteConfirmOverlay';
+    overlay.className='delete-confirm-overlay';
+    overlay.setAttribute('role','presentation');
+    const dialog=document.createElement('section');
+    dialog.className='delete-confirm-dialog';
+    dialog.setAttribute('role','dialog');
+    dialog.setAttribute('aria-modal','true');
+    dialog.setAttribute('aria-labelledby','deleteConfirmTitle');
+    const title=document.createElement('h3');
+    title.id='deleteConfirmTitle';
+    title.textContent=type==='song'?'Lied löschen?':'Schülerkonto löschen?';
+    const explanation=document.createElement('p');
+    explanation.textContent='Diese Aktion kann nicht rückgängig gemacht werden. Vorhandene Gesangsaufnahmen oder Begleitdateien verhindern das Löschen.';
+    const caption=document.createElement('label');
+    caption.htmlFor='deleteConfirmName';
+    caption.textContent='Zur Bestätigung den vollständigen '+(type==='song'?'Liedtitel':'Schülernamen')+' eingeben:';
+    const expected=document.createElement('p');
+    expected.className='delete-confirm-expected';
+    expected.textContent=name;
+    const input=document.createElement('input');
+    input.id='deleteConfirmName';
+    input.type='text';
+    input.autocomplete='off';
+    input.spellcheck=false;
+    const actions=document.createElement('div');
+    actions.className='row delete-confirm-actions';
+    const cancel=document.createElement('button');
+    cancel.type='button';
+    cancel.className='button-secondary';
+    cancel.textContent='Abbrechen';
+    const proceed=document.createElement('button');
+    proceed.type='button';
+    proceed.className='button-delete-subtle';
+    proceed.textContent='Endgültig löschen';
+    proceed.disabled=true;
+    actions.append(cancel,proceed);
+    dialog.append(title,explanation,caption,expected,input,actions);
+    overlay.append(dialog);
+    document.body.append(overlay);
+    const finish=answer=>{
+      document.removeEventListener('keydown',onKey);
+      overlay.remove();
+      resolve(answer);
+    };
+    const onKey=e=>{
+      if(e.key==='Escape'){e.preventDefault();finish(false);}
+      if(e.key==='Enter'&&document.activeElement===input&&input.value===name){e.preventDefault();finish(true);}
+    };
+    document.addEventListener('keydown',onKey);
+    input.addEventListener('input',()=>{proceed.disabled=input.value!==name;});
+    cancel.addEventListener('click',()=>finish(false));
+    proceed.addEventListener('click',()=>{if(input.value===name)finish(true);});
+    overlay.addEventListener('click',e=>{if(e.target===overlay)finish(false);});
+    input.focus();
+  });
 }
 async function deleteStudent(id){
   if(!isTeacher())throw Error('Nur Lehrkräfte können Schülerkonten löschen.');
