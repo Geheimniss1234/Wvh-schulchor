@@ -212,28 +212,120 @@ function startPcmCapture(stream){
     close(){processor.onaudioprocess=null;try{processor.disconnect();source.disconnect();}catch{}ctx.close().catch(()=>{});}};
 }
 
-// Festliche Hintergründe: lokale Canvas-Grafiken, Personenerkennung im Browser.
-const festiveNames=['Ohne Hintergrund','Weihnachtswald','Sternenhimmel','Herzenswärme','Weihnachtsmärchen','Weihnachtszauber','Wintermagie'];
-let festiveSession=null, festiveChoice=0, festiveModel=null;
+// Die sechs hochgeladenen Bilder; Verarbeitung und Kamerabild bleiben im Browser.
+const festiveNames=['Ohne Hintergrund','Weihnachtswald','Goldene Herzen','Goldener Sternenglanz','Weihnachtsdorf','Weihnachtsbaum','Festlicher Sternenrahmen'];
+const festiveFiles=[null,...[16,17,18,19,20,21].map(n=>`assets/backgrounds/christmas-${n}.jpg`)];
+let festiveSession=null, festiveChoice=0, festiveModel=null, festiveGeneration=0;
+let festiveWork=Promise.resolve(), festivePending=null;
+const festiveImages=new Map();
+function festiveStatus(text){const el=$('festiveStatus');if(el)el.textContent=text;}
 function festiveArt(n){
- const a=document.createElement('canvas');a.width=640;a.height=480;const x=a.getContext('2d');
- const g=x.createRadialGradient(320,180,10,320,240,420);g.addColorStop(0,'#ef4444');g.addColorStop(.55,'#b91c32');g.addColorStop(1,'#741329');x.fillStyle=g;x.fillRect(0,0,640,480);
- let seed=42+n;const rnd=()=>{seed=(seed*1664525+1013904223)>>>0;return seed/4294967296;};
- for(let i=0;i<90;i++){const px=rnd()*640,py=rnd()*480,r=1+rnd()*4;x.globalAlpha=.25+rnd()*.65;x.fillStyle=i%2?'#fff5e5':'#ebc477';x.beginPath();x.arc(px,py,r,0,Math.PI*2);x.fill();}x.globalAlpha=1;
- const star=(px,py,r)=>{x.fillStyle='#ebc477';x.beginPath();for(let j=0;j<10;j++){const t=j*Math.PI/5-Math.PI/2,rr=j%2?r*.38:r;x.lineTo(px+Math.cos(t)*rr,py+Math.sin(t)*rr);}x.closePath();x.fill();};
- const tree=(px,py,s)=>{x.fillStyle='#fff5e5';for(let j=0;j<3;j++){x.beginPath();x.moveTo(px,py-s+j*s*.22);x.lineTo(px-s*(.22+j*.08),py-s*.4+j*s*.22);x.lineTo(px+s*(.22+j*.08),py-s*.4+j*s*.22);x.fill();}for(let j=0;j<12;j++){x.fillStyle='#ebc477';x.beginPath();x.arc(px+(rnd()-.5)*s*.4,py-s*.45+rnd()*s*.4,3,0,7);x.fill();}star(px,py-s,10);};
- if(n===1||n===5){tree(65,460,210);tree(575,460,240);if(n===1){tree(145,440,120);tree(500,440,130);}}
- if(n===2)for(let i=0;i<12;i++)star(25+rnd()*590,15+rnd()*120,8+rnd()*14);
- if(n===3){x.font='64px serif';x.fillStyle='#ebc477';x.fillText('♥',35,105);x.fillText('♥',540,150);x.font='35px serif';x.fillText('♥',95,180);x.fillText('♥',490,75);}
- if(n===4){for(const p of [15,95,490,570]){x.fillStyle='#92152c';x.fillRect(p,370,55,75);x.fillStyle='#fff5e5';x.beginPath();x.moveTo(p-8,375);x.lineTo(p+27,335);x.lineTo(p+63,375);x.fill();x.fillStyle='#ebc477';x.fillRect(p+12,390,12,18);x.fillRect(p+32,390,12,18);}}
- if(n===6){x.font='44px sans-serif';x.fillStyle='#fff5e5';for(let i=0;i<12;i++)x.fillText('❄',i%2?530+rnd()*65:10+rnd()*65,35+i*36);}
- return a;
+  if(!festiveImages.has(n))festiveImages.set(n,new Promise((resolve,reject)=>{
+    const img=new Image();img.onload=()=>resolve(img);img.onerror=()=>{festiveImages.delete(n);reject(Error('Das Weihnachtsbild konnte nicht geladen werden. Bitte erneut versuchen.'));};img.src=festiveFiles[n];
+  }));
+  return festiveImages.get(n);
 }
-function festivePicker(){return '<div class="row" style="margin:10px 0"><button type="button" class="button-secondary" data-action="camera-test">Kamera testen</button><button type="button" class="button-secondary" data-action="camera-off">Kamera ausschalten</button></div><p id="festiveStatus" class="tiny muted">Wähle deinen Hintergrund:</p><div id="festiveChoices" style="display:grid;grid-template-columns:repeat(auto-fit,minmax(105px,1fr));gap:8px"></div>';}
-function festiveButtons(){const el=$('festiveChoices');if(!el)return;el.replaceChildren();festiveNames.forEach((name,n)=>{const b=document.createElement('button');b.type='button';b.className='button-secondary';b.style.cssText='display:grid;gap:4px;padding:5px;white-space:normal;outline:'+(n===festiveChoice?'3px solid #b91c32':'none');if(n){const a=festiveArt(n);a.style.cssText='width:100%;border-radius:6px';b.append(a);}b.append(document.createTextNode(name));b.onclick=async()=>{if(state.countdownActive||state.recorder?.state==='recording')return;festiveChoice=n;festiveButtons();if(festiveSession){try{await festivePreview();}catch(e){notify(errText(e),true);}}};el.append(b);});}
-function festiveStop(){const s=festiveSession;festiveSession=null;if(s){s.dead=true;cancelAnimationFrame(s.frame);s.raw.getTracks().forEach(t=>t.stop());s.output?.getTracks().forEach(t=>t.stop());s.video.srcObject=null;}const p=$('cameraPreview');if(p){p.srcObject=null;p.style.display='none';}}
-async function festiveLoad(){if(!festiveModel){festiveModel=(async()=>{if(!window.SelfieSegmentation)await new Promise((ok,fail)=>{const s=document.createElement('script');s.src='https://cdn.jsdelivr.net/npm/@mediapipe/selfie_segmentation@0.1.1675465747/selfie_segmentation.js';s.onload=ok;s.onerror=()=>fail(Error('Hintergrund-Erkennung konnte nicht geladen werden.'));document.head.append(s);});const m=new window.SelfieSegmentation({locateFile:f=>'https://cdn.jsdelivr.net/npm/@mediapipe/selfie_segmentation@0.1.1675465747/'+f});m.setOptions({modelSelection:1});await m.initialize();return m;})().catch(e=>{festiveModel=null;throw e;});}return festiveModel;}
-async function festivePreview(){festiveStop();const p=$('cameraPreview');if(!p)return;const raw=await navigator.mediaDevices.getUserMedia({video:{width:{ideal:640},height:{ideal:480},frameRate:{ideal:24}},audio:false});const video=document.createElement('video');video.muted=true;video.playsInline=true;video.srcObject=raw;const s={raw,video,dead:false,output:raw};festiveSession=s;try{await video.play();if(s.dead||!p.isConnected)throw Error('Kameravorschau beendet.');if(festiveChoice){const model=await festiveLoad();if(s.dead)throw Error('Kameravorschau beendet.');const a=document.createElement('canvas');a.width=640;a.height=480;const x=a.getContext('2d'),bg=festiveArt(festiveChoice);x.drawImage(bg,0,0);model.onResults(r=>{if(s.dead)return;x.save();x.clearRect(0,0,640,480);x.drawImage(r.segmentationMask,0,0,640,480);x.globalCompositeOperation='source-in';x.drawImage(r.image,0,0,640,480);x.globalCompositeOperation='destination-over';x.drawImage(bg,0,0);x.restore();});await model.send({image:video});if(s.dead)throw Error('Kameravorschau beendet.');s.output=a.captureStream(24);const tick=async()=>{if(s.dead)return;try{await model.send({image:video});if(!s.dead)s.frame=requestAnimationFrame(tick);}catch(e){if(!s.dead){festiveStop();if(state.recorder?.state==='recording')finishRecord();notify('Hintergrund-Erkennung unterbrochen.',true);}}};s.frame=requestAnimationFrame(tick);}p.srcObject=s.output;p.style.display='block';await p.play();$('cameraEnabled').checked=true;return s.output;}catch(e){if(festiveSession===s)festiveStop();throw e;}}
+function festiveCover(ctx,img,width,height){
+  const iw=img.naturalWidth||img.videoWidth||img.width,ih=img.naturalHeight||img.videoHeight||img.height;
+  const scale=Math.max(width/iw,height/ih),w=iw*scale,h=ih*scale;
+  ctx.drawImage(img,(width-w)/2,(height-h)/2,w,h);
+}
+function festivePicker(){return '<div class="row" style="margin:10px 0"><button type="button" class="button-secondary" data-action="camera-test">Kamera testen</button><button type="button" class="button-secondary" data-action="camera-off">Kamera ausschalten</button></div><p id="festiveStatus" class="muted" role="status" aria-live="polite">Wähle deinen Hintergrund und klicke auf „Kamera testen“.</p><div id="festiveChoices" class="festive-choices" role="group" aria-label="Virtueller Hintergrund"></div>';}
+function festiveButtons(){
+  const el=$('festiveChoices');if(!el)return;el.replaceChildren();
+  festiveNames.forEach((name,n)=>{
+    const b=document.createElement('button');b.type='button';b.className='button-secondary festive-choice';b.setAttribute('aria-pressed',String(n===festiveChoice));b.disabled=state.countdownActive||state.recorder?.state==='recording';
+    if(n){const img=document.createElement('img');img.src=festiveFiles[n];img.alt='';img.loading='lazy';b.append(img);}
+    b.append(document.createTextNode(name));
+    b.onclick=async()=>{
+      if(state.countdownActive||state.recorder?.state==='recording')return;
+      festiveChoice=n;festiveButtons();
+      if(festiveSession||festivePending){try{await festivePreview();}catch(e){notify(errText(e),true);}}
+    };el.append(b);
+  });
+}
+function festiveStop(){
+  festiveGeneration++;festivePending=null;
+  const s=festiveSession;festiveSession=null;
+  if(s){s.dead=true;cancelAnimationFrame(s.frame);s.raw.getTracks().forEach(t=>t.stop());s.output?.getTracks().forEach(t=>t.stop());s.video.srcObject=null;}
+  const p=$('cameraPreview');if(p){p.srcObject=null;p.style.display='none';}
+  festiveStatus('Kamera ausgeschaltet.');
+}
+async function festiveLoad(){
+  if(!festiveModel)festiveModel=(async()=>{
+    const probe=document.createElement('canvas');const gl=probe.getContext('webgl2')||probe.getContext('webgl');
+    if(!gl)throw Error('Für virtuelle Hintergründe bitte die Grafikbeschleunigung im Browser aktivieren.');
+    gl.getExtension('WEBGL_lose_context')?.loseContext();
+    if(!window.SelfieSegmentation)await new Promise((ok,fail)=>{
+      const script=document.createElement('script');let timer;
+      const failed=()=>{clearTimeout(timer);script.remove();fail(Error('Hintergrund-Erkennung konnte nicht geladen werden.'));};
+      script.src='https://cdn.jsdelivr.net/npm/@mediapipe/selfie_segmentation@0.1.1675465747/selfie_segmentation.js';
+      script.onload=()=>{clearTimeout(timer);ok();};script.onerror=failed;timer=setTimeout(failed,20000);document.head.append(script);
+    });
+    const model=new window.SelfieSegmentation({locateFile:f=>'https://cdn.jsdelivr.net/npm/@mediapipe/selfie_segmentation@0.1.1675465747/'+f});
+    model.setOptions({modelSelection:1});await model.initialize();return model;
+  })().catch(e=>{festiveModel=null;throw e;});
+  return festiveModel;
+}
+// Ein Modell verarbeitet immer nur ein Bild, auch bei schnellem Hintergrundwechsel.
+function festiveSend(model,s,paint){
+  const work=festiveWork.catch(()=>{}).then(async()=>{if(s.dead)return;model.onResults(r=>{if(!s.dead)paint(r);});await model.send({image:s.video});});
+  festiveWork=work;return work;
+}
+function festivePreview(){
+  festiveStop();const generation=festiveGeneration,choice=festiveChoice;
+  const pending=festiveStart(generation,choice);festivePending=pending;
+  pending.finally(()=>{if(festivePending===pending)festivePending=null;}).catch(()=>{});
+  return pending;
+}
+async function festiveStart(generation,choice){
+  const p=$('cameraPreview');if(!p)throw Error('Bitte zuerst „Einsingen“ öffnen.');
+  if(!window.isSecureContext||!navigator.mediaDevices?.getUserMedia)throw Error('Bitte die Webseite über HTTPS öffnen und den Kamerazugriff im Browser erlauben.');
+  festiveStatus('Kamerazugriff wird angefragt …');let s;
+  try{
+    const raw=await navigator.mediaDevices.getUserMedia({video:{width:{ideal:640},height:{ideal:480},frameRate:{ideal:24}},audio:false});
+    if(generation!==festiveGeneration||!p.isConnected){raw.getTracks().forEach(t=>t.stop());throw Error('Kameravorschau beendet.');}
+    const video=document.createElement('video');video.muted=true;video.playsInline=true;video.srcObject=raw;
+    s={raw,video,dead:false,output:raw};festiveSession=s;
+    p.srcObject=raw;p.style.display='block';await Promise.all([video.play(),p.play()]);
+    if(s.dead)throw Error('Kameravorschau beendet.');
+    $('cameraEnabled').checked=true;
+    festiveStatus(choice?'Kamera läuft. Weihnachtsbild und Personenerkennung werden geladen …':'Kamera läuft ohne virtuellen Hintergrund.');
+    if(choice){
+      try{
+        const [model,bg]=await Promise.all([festiveLoad(),festiveArt(choice)]);
+        if(s.dead)throw Error('Kameravorschau beendet.');
+        const canvas=document.createElement('canvas');canvas.width=video.videoWidth||640;canvas.height=video.videoHeight||480;
+        const x=canvas.getContext('2d');if(!x||!canvas.captureStream)throw Error('Virtuelle Hintergründe werden in diesem Browser nicht unterstützt.');
+        const paint=r=>{
+          x.save();x.clearRect(0,0,canvas.width,canvas.height);
+          x.drawImage(r.segmentationMask,0,0,canvas.width,canvas.height);
+          x.globalCompositeOperation='source-in';x.drawImage(r.image,0,0,canvas.width,canvas.height);
+          x.globalCompositeOperation='destination-over';festiveCover(x,bg,canvas.width,canvas.height);x.restore();
+        };
+        await festiveSend(model,s,paint);if(s.dead)throw Error('Kameravorschau beendet.');
+        s.output=canvas.captureStream(24);p.srcObject=s.output;await p.play();
+        festiveStatus('Kamera läuft mit „'+festiveNames[choice]+'“.');
+        const tick=async()=>{
+          if(s.dead)return;
+          try{await festiveSend(model,s,paint);if(!s.dead)s.frame=requestAnimationFrame(tick);}
+          catch(e){if(s.dead)return;if(state.recorder?.state==='recording'){finishRecord();festiveStop();notify('Hintergrund-Erkennung unterbrochen. Die Aufnahme wurde beendet.',true);}else{const output=s.output;s.output=s.raw;output.getTracks().forEach(t=>t.stop());p.srcObject=s.raw;p.play().catch(()=>{});festiveStatus('Personenerkennung unterbrochen. Kamera läuft ohne Hintergrund. Bitte erneut testen.');}}
+        };s.frame=requestAnimationFrame(tick);
+      }catch(e){
+        if(s.dead)throw e;
+        // Bei Ladefehlern bleibt die echte Vorschau sichtbar; keine leere Kamera.
+        if(s.output!==s.raw){s.output.getTracks().forEach(t=>t.stop());s.output=s.raw;p.srcObject=s.raw;await p.play();}
+        festiveChoice=0;festiveButtons();festiveStatus(errText(e)+' Kamera läuft ohne Hintergrund.');
+      }
+    }
+    if(s.dead)throw Error('Kameravorschau beendet.');return s.output;
+  }catch(e){
+    if(generation===festiveGeneration){festiveStop();if($('cameraEnabled'))$('cameraEnabled').checked=false;
+      const message=e.name==='NotAllowedError'?'Kamerazugriff wurde blockiert. Bitte in den Browser-Einstellungen für diese Seite erlauben und erneut testen.':e.name==='NotFoundError'?'Keine Kamera gefunden. Bitte eine Kamera anschließen.':e.name==='NotReadableError'?'Die Kamera ist gerade belegt. Bitte andere Kamera-Apps schließen.':errText(e);
+      festiveStatus(message);throw Error(message);
+    }throw e;
+  }
+}
 
 async function startRecord(){
   if(state.recorder?.state==='recording'||state.countdownActive)return;
@@ -249,7 +341,7 @@ async function startRecord(){
     const camera=!!$('cameraEnabled')?.checked;
     const audio=id?{deviceId:{ideal:id},echoCancellation:false,noiseSuppression:false,autoGainControl:false}:{echoCancellation:false,noiseSuppression:false,autoGainControl:false};
     // Nur EIN MediaRecorder: Bild und Stimme sind damit in exakt demselben Video.
-    if(camera){const output=festiveSession?.output||await festivePreview();const mic=await navigator.mediaDevices.getUserMedia({audio,video:false});state.stream=new MediaStream([...mic.getAudioTracks(),...output.getVideoTracks()]);}else{festiveStop();state.stream=await navigator.mediaDevices.getUserMedia({audio,video:false});}
+    if(camera){const output=await (festivePending||Promise.resolve(festiveSession?.output||null));const cameraOutput=output||await festivePreview();const mic=await navigator.mediaDevices.getUserMedia({audio,video:false});state.stream=new MediaStream([...mic.getAudioTracks(),...cameraOutput.getVideoTracks()]);}else{festiveStop();state.stream=await navigator.mediaDevices.getUserMedia({audio,video:false});}
     if(camera){
       const preview=$('cameraPreview');if(preview){preview.srcObject=state.stream;preview.style.display='block';preview.play().catch(()=>{});}
       state.pcmCapture=startPcmCapture(state.stream);
