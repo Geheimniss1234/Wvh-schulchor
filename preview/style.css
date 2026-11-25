@@ -91,3 +91,6 @@
 .delete-confirm-dialog input{display:block;width:100%;border:1px solid #9db2a7;border-radius:9px;padding:11px 12px}
 .delete-confirm-expected{padding:9px 12px;background:#f3f6f2;border:1px solid var(--line);border-radius:8px;font-weight:600;overflow-wrap:anywhere}
 .delete-confirm-actions{justify-content:flex-end;margin-top:19px}
+
+
+.festive-choices{display:grid;grid-template-columns:repeat(auto-fit,minmax(125px,1fr));gap:10px;margin-top:12px}.festive-choice{display:flex;flex-direction:column;gap:7px;align-items:center;justify-content:center;padding:7px;white-space:normal;font-size:14px}.festive-choice img{width:100%;aspect-ratio:16/9;object-fit:cover;border-radius:6px}.festive-choice[aria-pressed=true]{outline:3px solid #ad2434;outline-offset:1px}#cameraPreview{aspect-ratio:4/3;object-fit:contain}#festiveStatus{font-size:14px}
